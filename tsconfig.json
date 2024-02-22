@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "noEmit": true,
+    "strict": true,
+    "target": "es2015",
+    "noImplicitOverride": true,
+    "allowUnreachableCode": false
+  },
+  "include": ["app/frontend/entrypoints/**/*"]
+}
