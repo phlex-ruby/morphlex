@@ -13,9 +13,6 @@ export default function tinyMorph(from: Node, to: Node): void {
 }
 
 function morph(from: Node, to: Node, idMap: IdMap, insertBefore?: Node, parent?: Node): void {
-	idMap.delete(from);
-	idMap.delete(to);
-
 	if (parent && insertBefore && insertBefore !== from) parent.insertBefore(to, insertBefore);
 
 	if (from instanceof Text && to instanceof Text) {
