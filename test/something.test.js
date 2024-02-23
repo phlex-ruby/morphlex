@@ -267,4 +267,176 @@ describe("my-test", () => {
 			expect(a.value).to.equal("hi");
 		});
 	});
+
+	describe("boolean properties", () => {
+		describe("checked", () => {
+			it("if new tree has no checked and old tree does, remove value", async () => {
+				const a = await fixture(html`<input type="checkbox" checked=${true} />`);
+				const b = await fixture(html`<input type="checkbox" />`);
+
+			  morph(a, b);
+
+				expect(a.outerHTML).to.equal(b.outerHTML);
+				expect(a.checked).to.equal(false);
+			});
+
+			it("if new tree has checked and old tree does not, add value", async () => {
+				const a = await fixture(html`<input type="checkbox" />`);
+				const b = await fixture(html`<input type="checkbox" checked=${true} />`);
+
+			  morph(a, b);
+
+				expect(a.outerHTML).to.equal(b.outerHTML);
+				expect(a.checked).to.equal(true);
+			});
+
+			it("if new tree has checked=false and old tree has checked=true, set value from new tree", async () => {
+				const a = await fixture(html`<input type="checkbox" checked=${false} />`);
+				const b = await fixture(html`<input type="checkbox" checked=${true} />`);
+
+			  morph(a, b);
+
+				expect(a.outerHTML).to.equal(b.outerHTML);
+				expect(a.checked).to.equal(true);
+			});
+
+			it("if new tree has checked=true and old tree has checked=false, set value from new tree", async () => {
+				const a = await fixture(html`<input type="checkbox" checked=${true} />`);
+				const b = await fixture(html`<input type="checkbox" checked=${false} />`);
+
+			  morph(a, b);
+
+				expect(a.outerHTML).to.equal(b.outerHTML);
+				expect(a.checked).to.equal(false);
+			});
+
+			it("if new tree has no checked and old tree has checked mutated to true, set value from new tree", async () => {
+				const a = await fixture(html`<input type="checkbox" />`);
+				const b = await fixture(html`<input type="checkbox" />`);
+				b.checked = true;
+
+			  morph(a, b);
+
+				expect(a.outerHTML).to.equal(b.outerHTML);
+				expect(a.checked).to.equal(true);
+			});
+
+			it("if new tree has checked=false and old tree has checked mutated to true, set value from new tree", async () => {
+				const a = await fixture(html`<input type="checkbox" checked=${false} />`);
+				const b = await fixture(html`<input type="checkbox" />`);
+				b.checked = true;
+
+			  morph(a, b);
+
+				expect(a.outerHTML).to.equal(b.outerHTML);
+				expect(a.checked).to.equal(true);
+			});
+
+			it("if new tree has checked=true and old tree has checked mutated to false, set value from new tree", async () => {
+				const a = await fixture(html`<input type="checkbox" checked=${true} />`);
+				const b = await fixture(html`<input type="checkbox" />`);
+				b.checked = false;
+
+			  morph(a, b);
+
+				expect(a.outerHTML).to.equal(b.outerHTML);
+				expect(a.checked).to.equal(false);
+			});
+
+			it("if new tree has no checked and old tree has checked=true, set value from new tree", async () => {
+				const a = await fixture(html`<input type="checkbox" />`);
+				const b = await fixture(html`<input type="checkbox" checked=${true} />`);
+
+			  morph(a, b);
+
+				expect(a.outerHTML).to.equal(b.outerHTML);
+				expect(a.checked).to.equal(true);
+			});
+		});
+
+		describe("disabled", () => {
+			it("if new tree has no disabled and old tree does, remove value", async () => {
+				const a = await fixture(html`<input type="checkbox" disabled=${true} />`);
+				const b = await fixture(html`<input type="checkbox" />`);
+
+			  morph(a, b);
+
+				expect(a.outerHTML).to.equal(b.outerHTML);
+				expect(a.disabled).to.equal(false);
+			});
+
+			it("if new tree has disabled and old tree does not, add value", async () => {
+				const a = await fixture(html`<input type="checkbox" />`);
+				const b = await fixture(html`<input type="checkbox" disabled=${true} />`);
+
+			  morph(a, b);
+
+				expect(a.outerHTML).to.equal(b.outerHTML);
+				expect(a.disabled).to.equal(true);
+			});
+
+			it("if new tree has disabled=false and old tree has disabled=true, set value from new tree", async () => {
+				const a = await fixture(html`<input type="checkbox" disabled=${false} />`);
+				const b = await fixture(html`<input type="checkbox" disabled=${true} />`);
+
+			  morph(a, b);
+
+				expect(a.outerHTML).to.equal(b.outerHTML);
+				expect(a.disabled).to.equal(true);
+			});
+
+			it("if new tree has disabled=true and old tree has disabled=false, set value from new tree", async () => {
+				const a = await fixture(html`<input type="checkbox" disabled=${true} />`);
+				const b = await fixture(html`<input type="checkbox" disabled=${false} />`);
+
+			  morph(a, b);
+
+				expect(a.outerHTML).to.equal(b.outerHTML);
+				expect(a.disabled).to.equal(false);
+			});
+
+			it("if new tree has no disabled and old tree has disabled mutated to true, set value from new tree", async () => {
+				const a = await fixture(html`<input type="checkbox" />`);
+				const b = await fixture(html`<input type="checkbox" />`);
+				b.disabled = true;
+
+			  morph(a, b);
+
+				expect(a.outerHTML).to.equal(b.outerHTML);
+				expect(a.disabled).to.equal(true);
+			});
+
+			it("if new tree has disabled=false and old tree has disabled mutated to true, set value from new tree", async () => {
+				const a = await fixture(html`<input type="checkbox" disabled=${false} />`);
+				const b = await fixture(html`<input type="checkbox" />`);
+				b.disabled = true;
+
+			  morph(a, b);
+
+				expect(a.outerHTML).to.equal(b.outerHTML);
+				expect(a.disabled).to.equal(true);
+			});
+
+			it("if new tree has disabled=true and old tree has disabled mutated to false, set value from new tree", async () => {
+				const a = await fixture(html`<input type="checkbox" disabled=${true} />`);
+				const b = await fixture(html`<input type="checkbox" />`);
+				b.disabled = false;
+
+			  morph(a, b);
+
+				expect(a.outerHTML).to.equal(b.outerHTML);
+				expect(a.disabled).to.equal(false);
+			});
+
+			it("if new tree has no disabled and old tree has disabled=true, set value from new tree", async () => {
+				const a = await fixture(html`<input type="checkbox" />`);
+				const b = await fixture(html`<input type="checkbox" disabled=${true} />`);
+
+			  morph(a, b);
+
+				expect(a.outerHTML).to.equal(b.outerHTML);
+				expect(a.disabled).to.equal(true);
+			});
+		});
+	});
 });
