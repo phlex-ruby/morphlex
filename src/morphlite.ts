@@ -20,7 +20,7 @@ function morphNodes(from: Node, to: Node, idMap: IdMap, insertBefore?: Node, par
 	} else if (isElement(from) && isElement(to)) {
 		if (from.tagName === to.tagName) {
 			if (from.attributes.length > 0 || to.attributes.length > 0) morphAttributes(from, to);
-			if (to.childNodes.length > 0) morphChildNodes(from, to, idMap);
+			if (from.childNodes.length > 0 || to.childNodes.length > 0) morphChildNodes(from, to, idMap);
 		} else from.replaceWith(to.cloneNode(true));
 	} else {
 		throw new Error(
