@@ -586,7 +586,7 @@ describe("my-test", () => {
 		morph(a, b);
 
 		expect(a.outerHTML).to.equal(b.outerHTML);
-	})
+	});
 
 	it("should replace nodes after multiple iterations", async () => {
 		const a = await fixture(html`<ul></ul>`);
@@ -601,5 +601,121 @@ describe("my-test", () => {
 		morph(a, c);
 
 		expect(a.outerHTML).to.equal(c.outerHTML);
-	})
+	});
+
+	describe('use id as a key hint', () => {
+		it('appends an element', async () => {
+			const a = await fixture(html`<ul>
+				<li id="a"></li>
+				<li id="b"></li>
+				<li id="c"></li>
+			</ul>`);
+			const b = await fixture(html`<ul>
+				<li id="a"></li>
+				<li id="new"></li>
+				<li id="b"></li>
+				<li id="c"></li>
+			</ul>`);
+
+			const oldFirst = a.children[0];
+			const oldSecond = a.children[1];
+			const oldThird = a.children[2];
+
+			morph(a, b);
+
+			expect(a.outerHTML).to.equal(b.outerHTML);
+			expect(a.children[0]).to.equal(oldFirst);
+			expect(a.children[1]).to.equal(oldSecond);
+			expect(a.children[2]).to.equal(oldThird);
+	  });
+
+		it('handles non-id elements', async () => {
+			const a = await fixture(html`<ul>
+				<li></li>
+				<li id="a"></li>
+				<li id="b"></li>
+				<li id="c"></li>
+				<li></li>
+			</ul>`);
+			const b = await fixture(html`<ul>
+				<li></li>
+				<li id="a"></li>
+				<li id="new"></li>
+				<li id="b"></li>
+				<li id="c"></li>
+				<li></li>
+			</ul>`);
+
+			const oldSecond = a.children[1];
+			const oldThird = a.children[2];
+			const oldFourth = a.children[3];
+
+			morph(a, b);
+
+			expect(a.outerHTML).to.equal(b.outerHTML);
+			expect(a.children[1]).to.equal(oldSecond);
+			expect(a.children[3]).to.equal(oldThird);
+			expect(a.children[4]).to.equal(oldFourth);
+	  });
+
+		it('copies over children', async () => {
+			const a = await fixture(html`<section>'hello'<section>`);
+			const b = await fixture(html`<section><div></div><section>`);
+
+			morph(a, b);
+
+			expect(a.outerHTML).to.equal(b.outerHTML);
+	  })
+
+		it('removes an element', async () => {
+			const a = await fixture(html`<ul><li id="a"></li><li id="b"></li><li id="c"></li></ul>`);
+			const b = await fixture(html`<ul><li id="a"></li><li id="c"></li></ul>`);
+
+			const oldFirst = a.children[0];
+			const oldThird = a.children[2];
+
+			morph(a, b);
+
+			expect(a.outerHTML).to.equal(b.outerHTML);
+			expect(a.children[0]).to.equal(oldFirst);
+			expect(a.children[1]).to.equal(oldThird);
+		})
+
+		it('id match still morphs', async () => {
+			const a = await fixture(html`<li id="12">FOO</li>`);
+			const b = await fixture(html`<li id="12">BAR</li>`);
+
+			morph(a, b);
+
+			expect(a.outerHTML).to.equal(b.outerHTML);
+		})
+
+		it('removes orphaned keyed nodes', async () => {
+			const a = await fixture(html`
+				<div>
+					<div>1</div>
+					<li id="a">a</li>
+				</div>
+			`);
+			const b = await fixture(html`
+				<div>
+					<div>2</div>
+					<li id="b">b</li>
+				</div>
+			`);
+
+			morph(a, b);
+
+			expect(a.outerHTML).to.equal(b.outerHTML);
+		})
+
+		it('whitespace', async () => {
+			const a = await fixture(html`<ul> </ul>`);
+			const b = await fixture(html`<ul><li></li><li></li> </ul>`);
+
+			morph(a, b);
+
+			expect(a.outerHTML).to.equal(b.outerHTML);
+		})
+	});
 });
