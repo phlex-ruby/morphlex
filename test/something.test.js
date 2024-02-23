@@ -483,4 +483,69 @@ describe("my-test", () => {
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
 	});
+
+	describe("selectables", () => {
+		it('should append nodes', async () => {
+			const a = await fixture(html`<select></select>`);
+			const b = await fixture(html`<select><option>1</option><option>2</option><option>3</option><option>4</option></select>`);
+
+			morph(a, b);
+
+			expect(a.outerHTML).to.equal(b.outerHTML);
+		});
+
+		it('should append nodes (including optgroups)', async () => {
+			const a = await fixture(html`<select></select>`);
+			const b = await fixture(html`<select><optgroup><option>1</option><option>2</option></optgroup><option>3</option><option>4</option></select>`);
+
+			morph(a, b);
+
+			expect(a.outerHTML).to.equal(b.outerHTML);
+		});
+
+		it('should remove nodes', async () => {
+			const a = await fixture(html`<select><option>1</option><option>2</option><option>3</option><option>4</option></select>`);
+			const b = await fixture(html`<select></select>`);
+
+			morph(a, b);
+
+			expect(a.outerHTML).to.equal(b.outerHTML);
+		});
+
+		it('should remove nodes (including optgroups)', async () => {
+			const a = await fixture(html`<select><optgroup><option>1</option><option>2</option></optgroup><option>3</option><option>4</option></select>`);
+			const b = await fixture(html`<select></select>`);
+
+			morph(a, b);
+
+			expect(a.outerHTML).to.equal(b.outerHTML);
+		});
+
+		it('should add selected', async () => {
+			const a = await fixture(html`<select><option>1</option><option>2</option></select>`);
+			const b = await fixture(html`<select><option>1</option><option selected>2</option></select>`);
+
+			morph(a, b);
+
+			expect(a.outerHTML).to.equal(b.outerHTML);
+		});
+
+		it('should add selected (xhtml)', async () => {
+			const a = await fixture(html`<select><option>1</option><option>2</option></select>`);
+			const b = await fixture(html`<select><option>1</option><option selected="selected">2</option></select>`);
+
+			morph(a, b);
+
+			expect(a.outerHTML).to.equal(b.outerHTML);
+		});
+
+		it('should switch selected', async () => {
+			const a = await fixture(html`<select><option selected="selected">1</option><option>2</option></select>`);
+			const b = await fixture(html`<select><option>1</option><option selected="selected">2</option></select>`);
+
+			morph(a, b);
+
+			expect(a.outerHTML).to.equal(b.outerHTML);
+		});
+	});
 });
