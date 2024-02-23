@@ -718,4 +718,40 @@ describe("my-test", () => {
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		})
 	});
+
+	it('allows morphing from Node to NodeList', async () => {
+		const a = await fixture(html`<div><div>a</div></div>`);
+		const b = await fixture(html`<div>a</div><div>b</div>`);
+
+		morph(a, b);
+
+		expect(a.outerHTML).to.equal(b.outerHTML);
+	})
+
+	it('allows morphing from NodeList to Node', async () => {
+		const a = await fixture(html`<div>a</div><div>b</div>`);
+		const b = await fixture(html`<div><div>a</div></div>`);
+
+		morph(a, b);
+
+		expect(a.outerHTML).to.equal(b.outerHTML);
+	})
+
+	it('allows morphing from NodeList to NodeList', async () => {
+		const a = await fixture(html`<div>a</div><div>b</div>`);
+		const b = await fixture(html`<div>z</div><div>y</div>`);
+
+		morph(a, b);
+
+		expect(a.outerHTML).to.equal(b.outerHTML);
+	})
+
+	it('allows morphing from Node to Node', async () => {
+		const a = await fixture(html`<div><div>a</div></div>`);
+		const b = await fixture(html`<div><div>b</div></div>`);
+
+		morph(a, b);
+
+		expect(a.outerHTML).to.equal(b.outerHTML);
+	})
 });
