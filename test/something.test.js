@@ -2,6 +2,20 @@ import { fixture, html, expect } from "@open-wc/testing";
 import { morph } from "../";
 
 describe("my-test", () => {
+	it("supports nodes from iframes", async () => {
+		const iframe = await fixture(html`<iframe></iframe>`);
+		const a = await fixture(html`<h1>Hello World</h1>`);
+		const b = iframe.contentDocument.createElement("h1");
+
+		b.textContent = "Hello Joel";
+
+		iframe.contentDocument.body.appendChild(b);
+
+		morph(a, iframe.contentDocument?.body.children[0]);
+
+		expect(a.textContent).to.equal("Hello Joel");
+	});
+
 	it("add text content", async () => {
 		const a = await fixture(html`<h1></h1>`);
 		const b = await fixture(html`<h1>Hello</h1>`);
@@ -274,7 +288,7 @@ describe("my-test", () => {
 				const a = await fixture(html`<input type="checkbox" checked=${true} />`);
 				const b = await fixture(html`<input type="checkbox" />`);
 
-			  morph(a, b);
+				morph(a, b);
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.checked).to.equal(false);
@@ -284,7 +298,7 @@ describe("my-test", () => {
 				const a = await fixture(html`<input type="checkbox" />`);
 				const b = await fixture(html`<input type="checkbox" checked=${true} />`);
 
-			  morph(a, b);
+				morph(a, b);
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.checked).to.equal(true);
@@ -294,7 +308,7 @@ describe("my-test", () => {
 				const a = await fixture(html`<input type="checkbox" checked=${false} />`);
 				const b = await fixture(html`<input type="checkbox" checked=${true} />`);
 
-			  morph(a, b);
+				morph(a, b);
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.checked).to.equal(true);
@@ -304,7 +318,7 @@ describe("my-test", () => {
 				const a = await fixture(html`<input type="checkbox" checked=${true} />`);
 				const b = await fixture(html`<input type="checkbox" checked=${false} />`);
 
-			  morph(a, b);
+				morph(a, b);
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.checked).to.equal(false);
@@ -315,7 +329,7 @@ describe("my-test", () => {
 				const b = await fixture(html`<input type="checkbox" />`);
 				b.checked = true;
 
-			  morph(a, b);
+				morph(a, b);
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.checked).to.equal(true);
@@ -326,7 +340,7 @@ describe("my-test", () => {
 				const b = await fixture(html`<input type="checkbox" />`);
 				b.checked = true;
 
-			  morph(a, b);
+				morph(a, b);
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.checked).to.equal(true);
@@ -337,7 +351,7 @@ describe("my-test", () => {
 				const b = await fixture(html`<input type="checkbox" />`);
 				b.checked = false;
 
-			  morph(a, b);
+				morph(a, b);
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.checked).to.equal(false);
@@ -347,7 +361,7 @@ describe("my-test", () => {
 				const a = await fixture(html`<input type="checkbox" />`);
 				const b = await fixture(html`<input type="checkbox" checked=${true} />`);
 
-			  morph(a, b);
+				morph(a, b);
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.checked).to.equal(true);
@@ -359,7 +373,7 @@ describe("my-test", () => {
 				const a = await fixture(html`<input type="checkbox" disabled=${true} />`);
 				const b = await fixture(html`<input type="checkbox" />`);
 
-			  morph(a, b);
+				morph(a, b);
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.disabled).to.equal(false);
@@ -369,7 +383,7 @@ describe("my-test", () => {
 				const a = await fixture(html`<input type="checkbox" />`);
 				const b = await fixture(html`<input type="checkbox" disabled=${true} />`);
 
-			  morph(a, b);
+				morph(a, b);
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.disabled).to.equal(true);
@@ -379,7 +393,7 @@ describe("my-test", () => {
 				const a = await fixture(html`<input type="checkbox" disabled=${false} />`);
 				const b = await fixture(html`<input type="checkbox" disabled=${true} />`);
 
-			  morph(a, b);
+				morph(a, b);
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.disabled).to.equal(true);
@@ -389,7 +403,7 @@ describe("my-test", () => {
 				const a = await fixture(html`<input type="checkbox" disabled=${true} />`);
 				const b = await fixture(html`<input type="checkbox" disabled=${false} />`);
 
-			  morph(a, b);
+				morph(a, b);
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.disabled).to.equal(false);
@@ -400,7 +414,7 @@ describe("my-test", () => {
 				const b = await fixture(html`<input type="checkbox" />`);
 				b.disabled = true;
 
-			  morph(a, b);
+				morph(a, b);
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.disabled).to.equal(true);
@@ -411,7 +425,7 @@ describe("my-test", () => {
 				const b = await fixture(html`<input type="checkbox" />`);
 				b.disabled = true;
 
-			  morph(a, b);
+				morph(a, b);
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.disabled).to.equal(true);
@@ -422,7 +436,7 @@ describe("my-test", () => {
 				const b = await fixture(html`<input type="checkbox" />`);
 				b.disabled = false;
 
-			  morph(a, b);
+				morph(a, b);
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.disabled).to.equal(false);
@@ -432,20 +446,20 @@ describe("my-test", () => {
 				const a = await fixture(html`<input type="checkbox" />`);
 				const b = await fixture(html`<input type="checkbox" disabled=${true} />`);
 
-			  morph(a, b);
+				morph(a, b);
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.disabled).to.equal(true);
 			});
 		});
 
-		describe('indeterminate', () => {
+		describe("indeterminate", () => {
 			it("if new tree has no indeterminate and old tree has indeterminate mutated to true, set value from new tree", async () => {
 				const a = await fixture(html`<input type="checkbox" />`);
 				const b = await fixture(html`<input type="checkbox" />`);
 				b.indeterminate = true;
 
-			  morph(a, b);
+				morph(a, b);
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.indeterminate).to.equal(true);
@@ -456,18 +470,26 @@ describe("my-test", () => {
 				const b = await fixture(html`<input type="checkbox" />`);
 				b.indeterminate = false;
 
-			  morph(a, b);
+				morph(a, b);
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.indeterminate).to.equal(false);
 			});
-    })
+		});
 	});
 
 	describe("lists", () => {
 		it("should append nodes", async () => {
 			const a = await fixture(html`<ul></ul>`);
-			const b = await fixture(html`<ul><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li></ul>`);
+			const b = await fixture(
+				html`<ul>
+					<li>1</li>
+					<li>2</li>
+					<li>3</li>
+					<li>4</li>
+					<li>5</li>
+				</ul>`,
+			);
 
 			morph(a, b);
 
@@ -475,7 +497,15 @@ describe("my-test", () => {
 		});
 
 		it("should remove nodes", async () => {
-			const a = await fixture(html`<ul><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li></ul>`);
+			const a = await fixture(
+				html`<ul>
+					<li>1</li>
+					<li>2</li>
+					<li>3</li>
+					<li>4</li>
+					<li>5</li>
+				</ul>`,
+			);
 			const b = await fixture(html`<ul></ul>`);
 
 			morph(a, b);

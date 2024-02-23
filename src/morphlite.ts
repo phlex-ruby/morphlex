@@ -47,7 +47,6 @@ function morphChildNodes(from: Element, to: Element, idMap: IdMap): void {
 		else if (childB) from.appendChild(childB.cloneNode(true));
 	}
 
-	console.log("Got here ", from.childNodes.length, to.childNodes.length, from.childNodes[0]);
 	while (from.childNodes.length > to.childNodes.length) from.lastChild?.remove();
 }
 
