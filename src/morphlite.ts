@@ -1,67 +1,67 @@
 type IdSet = Set<string>;
 type IdMap = Map<Node, IdSet>;
 
-export function morph(from: Node, to: Node): void {
+export function morph(node: Node, guide: Node): void {
 	const idMap: IdMap = new Map();
 
-	if (isElement(from) && isElement(to)) {
-		populateIdMapForNode(from, idMap);
-		populateIdMapForNode(to, idMap);
+	if (isElement(node) && isElement(guide)) {
+		populateIdMapForNode(node, idMap);
+		populateIdMapForNode(guide, idMap);
 	}
 
-	morphNodes(from, to, idMap);
+	morphNodes(node, guide, idMap);
 }
 
-function morphNodes(from: Node, to: Node, idMap: IdMap, insertBefore?: Node, parent?: Node): void {
-	if (parent && insertBefore && insertBefore !== from) parent.insertBefore(to, insertBefore);
+function morphNodes(node: Node, guide: Node, idMap: IdMap, insertBefore?: Node, parent?: Node): void {
+	if (parent && insertBefore && insertBefore !== node) parent.insertBefore(guide, insertBefore);
 
-	if (isText(from) && isText(to)) {
-		if (from.textContent !== to.textContent) from.textContent = to.textContent;
-	} else if (isElement(from) && isElement(to)) {
-		if (from.tagName === to.tagName) {
-			if (from.attributes.length > 0 || to.attributes.length > 0) morphAttributes(from, to);
-			if (from.childNodes.length > 0 || to.childNodes.length > 0) morphChildNodes(from, to, idMap);
-		} else from.replaceWith(to.cloneNode(true));
-	} else throw new Error(`Cannot morph from ${from.constructor.name}, to ${to.constructor.name}`);
+	if (isText(node) && isText(guide)) {
+		if (node.textContent !== guide.textContent) node.textContent = guide.textContent;
+	} else if (isElement(node) && isElement(guide)) {
+		if (node.tagName === guide.tagName) {
+			if (node.attributes.length > 0 || guide.attributes.length > 0) morphAttributes(node, guide);
+			if (node.childNodes.length > 0 || guide.childNodes.length > 0) morphChildNodes(node, guide, idMap);
+		} else node.replaceWith(guide.cloneNode(true));
+	} else throw new Error(`Cannot morph from ${node.constructor.name}, to ${guide.constructor.name}`);
 }
 
-function morphAttributes(from: Element, to: Element): void {
-	for (const { name } of from.attributes) to.hasAttribute(name) || from.removeAttribute(name);
-	for (const { name, value } of to.attributes) from.getAttribute(name) !== value && from.setAttribute(name, value);
+function morphAttributes(elem: Element, guide: Element): void {
+	for (const { name } of elem.attributes) guide.hasAttribute(name) || elem.removeAttribute(name);
+	for (const { name, value } of guide.attributes) elem.getAttribute(name) !== value && elem.setAttribute(name, value);
 
-	if (isInput(from) && isInput(to) && from.value !== to.value) from.value = to.value;
-	if (isOption(from) && isOption(to)) from.selected = to.selected;
-	if (isTextArea(from) && isTextArea(to)) from.value = to.value;
+	if (isInput(elem) && isInput(guide) && elem.value !== guide.value) elem.value = guide.value;
+	if (isOption(elem) && isOption(guide)) elem.selected = guide.selected;
+	if (isTextArea(elem) && isTextArea(guide)) elem.value = guide.value;
 }
 
-function morphChildNodes(from: Element, to: Element, idMap: IdMap): void {
-	for (let i = 0; i < to.childNodes.length; i++) {
-		const childA = [...from.childNodes].at(i);
-		const childB = [...to.childNodes].at(i);
+function morphChildNodes(elem: Element, guide: Element, idMap: IdMap): void {
+	for (let i = 0; i < guide.childNodes.length; i++) {
+		const childA = [...elem.childNodes].at(i);
+		const childB = [...guide.childNodes].at(i);
 
-		if (childA && childB) morphChildNode(childA, childB, idMap, from);
-		else if (childB) from.appendChild(childB.cloneNode(true));
+		if (childA && childB) morphChildNode(childA, childB, idMap, elem);
+		else if (childB) elem.appendChild(childB.cloneNode(true));
 	}
 
-	while (from.childNodes.length > to.childNodes.length) from.lastChild?.remove();
+	while (elem.childNodes.length > guide.childNodes.length) elem.lastChild?.remove();
 }
 
-function morphChildNode(from: ChildNode, to: ChildNode, idMap: IdMap, parent: Element): void {
-	if (isElement(from) && isElement(to)) {
-		let current: ChildNode | null = from;
+function morphChildNode(child: ChildNode, guide: ChildNode, idMap: IdMap, parent: Element): void {
+	if (isElement(child) && isElement(guide)) {
+		let current: ChildNode | null = child;
 		let nextBestMatch: ChildNode | null = null;
 
 		while (current && isElement(current)) {
-			if (current.id !== "" && current.id === to.id) {
-				morphNodes(current, to, idMap, from, parent);
+			if (current.id !== "" && current.id === guide.id) {
+				morphNodes(current, guide, idMap, child, parent);
 				break;
 			} else {
 				const setA = idMap.get(current);
-				const setB = idMap.get(to);
+				const setB = idMap.get(guide);
 
 				if (setA && setB && numberOfItemsInCommon(setA, setB) > 0) {
-					return morphNodes(current, to, idMap, from, parent);
-				} else if (!nextBestMatch && current.tagName === to.tagName) {
+					return morphNodes(current, guide, idMap, child, parent);
+				} else if (!nextBestMatch && current.tagName === guide.tagName) {
 					nextBestMatch = current;
 				}
 			}
@@ -69,9 +69,9 @@ function morphChildNode(from: ChildNode, to: ChildNode, idMap: IdMap, parent: El
 			current = current.nextSibling;
 		}
 
-		if (nextBestMatch) morphNodes(nextBestMatch, to, idMap, from, parent);
-		else from.replaceWith(to.cloneNode(true));
-	} else morphNodes(from, to, idMap);
+		if (nextBestMatch) morphNodes(nextBestMatch, guide, idMap, child, parent);
+		else child.replaceWith(guide.cloneNode(true));
+	} else morphNodes(child, guide, idMap);
 }
 
 function populateIdMapForNode(node: ParentNode, idMap: IdMap): void {
