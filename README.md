@@ -9,3 +9,11 @@ This is my first open source TypeScript project, so I’m still figuring out how
 - `npm install`
 - `npm watch`
 - in another tab `npm run "test:watch"`
+
+## Usage
+
+```javascript
+import { morph } from "morphlite";
+
+morph(currentNode, guideNode);
+```
