@@ -2,9 +2,13 @@ import { fixture, html, expect } from "@open-wc/testing";
 import { morph } from "../";
 
 describe("my-test", () => {
-	it("works", async () => {
+	it.only("works", async () => {
 		const a = await fixture(html`<h1></h1>`);
 		const b = await fixture(html`<h1>Hello</h1>`);
+
+		new MutationObserver(() => {
+			throw new Error("The to node was mutated.");
+		}).observe(b, { attributes: true, childList: true, subtree: true });
 
 		morph(a, b);
 
