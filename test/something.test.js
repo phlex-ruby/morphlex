@@ -438,5 +438,29 @@ describe("my-test", () => {
 				expect(a.disabled).to.equal(true);
 			});
 		});
+
+		describe('indeterminate', () => {
+			it("if new tree has no indeterminate and old tree has indeterminate mutated to true, set value from new tree", async () => {
+				const a = await fixture(html`<input type="checkbox" />`);
+				const b = await fixture(html`<input type="checkbox" />`);
+				b.indeterminate = true;
+
+			  morph(a, b);
+
+				expect(a.outerHTML).to.equal(b.outerHTML);
+				expect(a.indeterminate).to.equal(true);
+			});
+
+			it("if new tree has no indeterminate and old tree has indeterminate mutated to false, set value from new tree", async () => {
+				const a = await fixture(html`<input type="checkbox" />`);
+				const b = await fixture(html`<input type="checkbox" />`);
+				b.indeterminate = false;
+
+			  morph(a, b);
+
+				expect(a.outerHTML).to.equal(b.outerHTML);
+				expect(a.indeterminate).to.equal(false);
+			});
+    })
 	});
 });
