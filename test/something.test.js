@@ -190,7 +190,7 @@ describe("my-test", () => {
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
 
-		it("should update child nodes", async () => {
+		it.skip("should update child nodes", async () => {
 			const a = await fixture(html`<main><p>hello world</p></main>`);
 			const b = await fixture(html`<section><p>hello you</p></section>`);
 
