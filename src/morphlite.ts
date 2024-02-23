@@ -29,7 +29,7 @@ function morphAttributes(from: Element, to: Element): void {
 	for (const { name } of from.attributes) to.hasAttribute(name) || from.removeAttribute(name);
 	for (const { name, value } of to.attributes) from.getAttribute(name) !== value && from.setAttribute(name, value);
 
-	if (isInput(from) && isInput(to)) from.value = to.value;
+	if (isInput(from) && isInput(to) && from.value !== to.value) from.value = to.value;
 	if (isOption(from) && isOption(to)) from.selected = to.selected;
 	if (isTextArea(from) && isTextArea(to)) from.value = to.value;
 }
