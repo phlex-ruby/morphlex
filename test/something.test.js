@@ -578,4 +578,28 @@ describe("my-test", () => {
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
 	});
+
+	it("should replace nodes", async () => {
+		const a = await fixture(html`<ul><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li></ul>`);
+		const b = await fixture(html`<ul><div>1</div><li>2</li><p>3</p><li>4</li><li>5</li></ul>`);
+
+		morph(a, b);
+
+		expect(a.outerHTML).to.equal(b.outerHTML);
+	})
+
+	it("should replace nodes after multiple iterations", async () => {
+		const a = await fixture(html`<ul></ul>`);
+		const b = await fixture(html`<ul><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li></ul>`);
+
+		morph(a, b);
+
+		expect(a.outerHTML).to.equal(b.outerHTML);
+
+		const c = await fixture(html`<ul><div>1</div><li>2</li><p>3</p><li>4</li><li>5</li></ul>`);
+
+		morph(a, c);
+
+		expect(a.outerHTML).to.equal(c.outerHTML);
+	})
 });
