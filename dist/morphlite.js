@@ -23,9 +23,8 @@ function morphNodes(from, to, idMap, insertBefore, parent) {
         else
             from.replaceWith(to.cloneNode(true));
     }
-    else {
-        throw new Error(`Cannot morph nodes of different types: from is ${from.constructor.name}, to is ${to.constructor.name}`);
-    }
+    else
+        throw new Error(`Cannot morph from ${from.constructor.name}, to ${to.constructor.name}`);
 }
 function morphAttributes(from, to) {
     for (const { name } of from.attributes)

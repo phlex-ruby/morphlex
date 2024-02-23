@@ -22,11 +22,7 @@ function morphNodes(from: Node, to: Node, idMap: IdMap, insertBefore?: Node, par
 			if (from.attributes.length > 0 || to.attributes.length > 0) morphAttributes(from, to);
 			if (from.childNodes.length > 0 || to.childNodes.length > 0) morphChildNodes(from, to, idMap);
 		} else from.replaceWith(to.cloneNode(true));
-	} else {
-		throw new Error(
-			`Cannot morph nodes of different types: from is ${from.constructor.name}, to is ${to.constructor.name}`,
-		);
-	}
+	} else throw new Error(`Cannot morph from ${from.constructor.name}, to ${to.constructor.name}`);
 }
 
 function morphAttributes(from: Element, to: Element): void {
@@ -97,6 +93,10 @@ function populateIdMapForNode(node: ParentNode, idMap: IdMap): void {
 function numberOfItemsInCommon<T>(a: Set<T>, b: Set<T>): number {
 	return [...a].filter((item) => b.has(item)).length;
 }
+
+// We cannot use `instanceof` when nodes might be from different documents,
+// so we use type guards instead. This keeps TypeScript happy, while doing
+// the necessary checks at runtime.
 
 function isElement(node: Node): node is Element {
 	return node.nodeType === 1;
