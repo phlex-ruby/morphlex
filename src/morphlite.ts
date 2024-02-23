@@ -19,7 +19,7 @@ function morphNodes(from: Node, to: Node, idMap: IdMap, insertBefore?: Node, par
 		if (from.textContent !== to.textContent) from.textContent = to.textContent;
 	} else if (isElement(from) && isElement(to)) {
 		if (from.tagName === to.tagName) {
-			if (to.attributes.length > 0) morphAttributes(from, to);
+			if (from.attributes.length > 0 || to.attributes.length > 0) morphAttributes(from, to);
 			if (to.childNodes.length > 0) morphChildNodes(from, to, idMap);
 		} else from.replaceWith(to.cloneNode(true));
 	} else {

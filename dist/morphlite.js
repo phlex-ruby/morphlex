@@ -15,7 +15,7 @@ function morphNodes(from, to, idMap, insertBefore, parent) {
     }
     else if (isElement(from) && isElement(to)) {
         if (from.tagName === to.tagName) {
-            if (to.attributes.length > 0)
+            if (from.attributes.length > 0 || to.attributes.length > 0)
                 morphAttributes(from, to);
             if (to.childNodes.length > 0)
                 morphChildNodes(from, to, idMap);
