@@ -1,0 +1,19 @@
+{
+	"name": "morphlite",
+	"version": "0.0.1",
+	"description": "Morphlite is an attempt to create a DOM morphing function in less than 100 lines of code to use with [HTMZ](https://leanrada.com/htmz/) in small projects.",
+	"main": "dist/morphlite.js",
+	"scripts": {
+		"test": "web-test-runner test/**/*.test.js --node-resolve",
+		"build": "tsc",
+		"watch": "tsc -w",
+		"test:watch": "npm run test -- --watch"
+	},
+	"author": "Joel Drapper",
+	"license": "MIT",
+	"devDependencies": {
+		"@open-wc/testing": "^3.0.0-next.5",
+		"@web/test-runner": "^0.18.0",
+		"typescript": "^5.3.3"
+	}
+}
