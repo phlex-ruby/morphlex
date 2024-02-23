@@ -1,22 +1,23 @@
 import { fixture, html, expect } from "@open-wc/testing";
 import { morph } from "../";
 
-describe("morphlite", () => {
+describe("morph", () => {
 	it("supports nodes from iframes", async () => {
 		const iframe = await fixture(html`<iframe></iframe>`);
-		const a = await fixture(html`<h1>Hello World</h1>`);
-		const b = iframe.contentDocument.createElement("h1");
 
-		b.textContent = "Hello Joel";
+		const original = await fixture(html`<h1>Hello World</h1>`);
+		const eventual = iframe.contentDocument.createElement("h1");
 
-		iframe.contentDocument.body.appendChild(b);
+		eventual.textContent = "Hello Joel";
 
-		morph(a, iframe.contentDocument?.body.children[0]);
+		iframe.contentDocument.body.appendChild(eventual);
 
-		expect(a.textContent).to.equal("Hello Joel");
+		morph(original, eventual);
+
+		expect(original.textContent).to.equal("Hello Joel");
 	});
 
-	it("add text content", async () => {
+	it("syncs text content", async () => {
 		const a = await fixture(html`<h1></h1>`);
 		const b = await fixture(html`<h1>Hello</h1>`);
 
@@ -29,7 +30,7 @@ describe("morphlite", () => {
 		expect(a.textContent).to.equal(b.textContent);
 	});
 
-	it("removes elements", async () => {
+	it("removes excess elements", async () => {
 		const a = await fixture(html`<h1><div></div></h1>`);
 		const b = await fixture(html`<h1></h1>`);
 
