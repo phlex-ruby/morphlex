@@ -1,7 +1,7 @@
 import { fixture, html, expect } from "@open-wc/testing";
 import { morph } from "../";
 
-describe("my-test", () => {
+describe("morphlite", () => {
 	it("supports nodes from iframes", async () => {
 		const iframe = await fixture(html`<iframe></iframe>`);
 		const a = await fixture(html`<h1>Hello World</h1>`);
