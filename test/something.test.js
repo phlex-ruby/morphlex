@@ -463,4 +463,24 @@ describe("my-test", () => {
 			});
     })
 	});
+
+	describe("lists", () => {
+		it("should append nodes", async () => {
+			const a = await fixture(html`<ul></ul>`);
+			const b = await fixture(html`<ul><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li></ul>`);
+
+			morph(a, b);
+
+			expect(a.outerHTML).to.equal(b.outerHTML);
+		});
+
+		it("should remove nodes", async () => {
+			const a = await fixture(html`<ul><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li></ul>`);
+			const b = await fixture(html`<ul></ul>`);
+
+			morph(a, b);
+
+			expect(a.outerHTML).to.equal(b.outerHTML);
+		});
+	});
 });
