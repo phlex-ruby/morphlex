@@ -8,7 +8,7 @@ We were massively impressed by what [HTMZ](https://leanrada.com/htmz/) made poss
 
 There are three parts:
 
-1. iframe proxies for `prepend`, `append` and `morph` operations, targetted by normal HTML links and forms;
+1. iframe proxies for `prepend`, `append` and `morph` operations, targeted by normal HTML links and forms;
 2. a tiny DOM morphing function that can handle complex cases;
 3. a protocol for requesting the server return a specific fragment of a view by DOM id.
 
