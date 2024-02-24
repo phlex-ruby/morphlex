@@ -95,12 +95,12 @@ function populateIdMapForNode(node: ParentNode, idMap: IdMap): void {
 // so we use type guards instead. This keeps TypeScript happy, while doing
 // the necessary checks at runtime.
 
-function isElement(node: Node): node is Element {
-	return node.nodeType === 1;
-}
-
 function isText(node: Node): node is Text {
 	return node.nodeType === 3;
+}
+
+function isElement(node: Node): node is Element {
+	return node.nodeType === 1;
 }
 
 function isInput(element: Element): element is HTMLInputElement {
