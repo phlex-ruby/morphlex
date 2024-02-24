@@ -81,15 +81,17 @@ function morphChildNode(child, guide, idMap, parent) {
         morphNodes(child, guide, idMap);
 }
 function populateIdMapForNode(node, idMap) {
-    const parent = node.parentElement;
-    const elements = node.querySelectorAll("[id]");
-    for (const element of elements) {
-        if (element.id === "")
+    const elementsWithIds = node.querySelectorAll("[id]");
+    for (const elementWithId of elementsWithIds) {
+        const id = elementWithId.id;
+        if (id === "")
             continue;
-        let current = element;
-        while (current && current !== parent) {
+        let current = elementWithId;
+        while (current) {
             const idSet = idMap.get(current);
-            idSet ? idSet.add(element.id) : idMap.set(current, new Set([element.id]));
+            idSet ? idSet.add(id) : idMap.set(current, new Set([id]));
+            if (current === elementWithId)
+                break;
             current = current.parentElement;
         }
     }
