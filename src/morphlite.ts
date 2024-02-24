@@ -30,8 +30,8 @@ function morphAttributes(elem: Element, guide: Element): void {
 	for (const { name, value } of guide.attributes) elem.getAttribute(name) !== value && elem.setAttribute(name, value);
 
 	if (isInput(elem) && isInput(guide) && elem.value !== guide.value) elem.value = guide.value;
-	if (isOption(elem) && isOption(guide) && elem.selected !== guide.selected) elem.selected = guide.selected;
-	if (isTextArea(elem) && isTextArea(guide) && elem.value !== guide.value) elem.value = guide.value;
+	else if (isOption(elem) && isOption(guide) && elem.selected !== guide.selected) elem.selected = guide.selected;
+	else if (isTextArea(elem) && isTextArea(guide) && elem.value !== guide.value) elem.value = guide.value;
 }
 
 function morphChildNodes(elem: Element, guide: Element, idMap: IdMap): void {
