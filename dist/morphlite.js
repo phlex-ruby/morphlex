@@ -15,9 +15,9 @@ function morphNodes(node, guide, idMap, insertBefore, parent) {
     }
     else if (isElement(node) && isElement(guide)) {
         if (node.tagName === guide.tagName) {
-            if (node.attributes.length > 0 || guide.attributes.length > 0)
+            if (node.hasAttributes() || guide.hasAttributes())
                 morphAttributes(node, guide);
-            if (node.childNodes.length > 0 || guide.childNodes.length > 0)
+            if (node.hasChildNodes() || guide.hasChildNodes())
                 morphChildNodes(node, guide, idMap);
         }
         else
@@ -63,7 +63,7 @@ function morphChildNode(child, guide, idMap, parent) {
             else {
                 const setA = idMap.get(current);
                 const setB = idMap.get(guide);
-                if (setA && setB && numberOfItemsInCommon(setA, setB) > 0) {
+                if (setA && setB && hasItemInCommon(setA, setB)) {
                     return morphNodes(current, guide, idMap, child, parent);
                 }
                 else if (!nextBestMatch && current.tagName === guide.tagName) {
@@ -94,8 +94,8 @@ function populateIdMapForNode(node, idMap) {
         }
     }
 }
-function numberOfItemsInCommon(a, b) {
-    return [...a].filter((item) => b.has(item)).length;
+function hasItemInCommon(a, b) {
+    return [...a].some((item) => b.has(item));
 }
 function isElement(node) {
     return node.nodeType === 1;
