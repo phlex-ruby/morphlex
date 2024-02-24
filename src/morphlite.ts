@@ -19,8 +19,8 @@ function morphNodes(node: Node, guide: Node, idMap: IdMap, insertBefore?: Node, 
 		if (node.textContent !== guide.textContent) node.textContent = guide.textContent;
 	} else if (isElement(node) && isElement(guide)) {
 		if (node.tagName === guide.tagName) {
-			if (node.attributes.length > 0 || guide.attributes.length > 0) morphAttributes(node, guide);
-			if (node.childNodes.length > 0 || guide.childNodes.length > 0) morphChildNodes(node, guide, idMap);
+			if (node.hasAttributes() || guide.hasAttributes()) morphAttributes(node, guide);
+			if (node.hasChildNodes() || guide.hasChildNodes()) morphChildNodes(node, guide, idMap);
 		} else node.replaceWith(guide.cloneNode(true));
 	} else throw new Error(`Cannot morph from ${node.constructor.name}, to ${guide.constructor.name}`);
 }
