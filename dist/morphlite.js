@@ -55,19 +55,21 @@ function morphChildNode(child, guide, idMap, parent) {
     if (isElement(child) && isElement(guide)) {
         let current = child;
         let nextBestMatch = null;
-        while (current && isElement(current)) {
-            if (current.id !== "" && current.id === guide.id) {
-                morphNodes(current, guide, idMap, child, parent);
-                break;
-            }
-            else {
-                const setA = idMap.get(current);
-                const setB = idMap.get(guide);
-                if (setA && setB && [...setA].some((it) => setB.has(it))) {
-                    return morphNodes(current, guide, idMap, child, parent);
+        while (current) {
+            if (isElement(current)) {
+                if (current.id !== "" && current.id === guide.id) {
+                    morphNodes(current, guide, idMap, child, parent);
+                    break;
                 }
-                else if (!nextBestMatch && current.tagName === guide.tagName) {
-                    nextBestMatch = current;
+                else {
+                    const a = idMap.get(current);
+                    const b = idMap.get(guide);
+                    if (a && b && [...a].some((it) => b.has(it))) {
+                        return morphNodes(current, guide, idMap, child, parent);
+                    }
+                    else if (!nextBestMatch && current.tagName === guide.tagName) {
+                        nextBestMatch = current;
+                    }
                 }
             }
             current = current.nextSibling;
