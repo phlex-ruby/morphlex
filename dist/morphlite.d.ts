@@ -1,1 +1,1 @@
-export declare function morph(node: Node, guide: Node): void;
+export declare function morph(node: ChildNode, guide: ChildNode): void;

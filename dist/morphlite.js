@@ -13,18 +13,14 @@ function morphNodes(node, guide, idMap, insertBefore, parent) {
         if (node.textContent !== guide.textContent)
             node.textContent = guide.textContent;
     }
-    else if (isElement(node) && isElement(guide)) {
-        if (node.tagName === guide.tagName) {
-            if (node.hasAttributes() || guide.hasAttributes())
-                morphAttributes(node, guide);
-            if (node.hasChildNodes() || guide.hasChildNodes())
-                morphChildNodes(node, guide, idMap);
-        }
-        else
-            node.replaceWith(guide.cloneNode(true));
+    else if (isElement(node) && isElement(guide) && node.tagName === guide.tagName) {
+        if (node.hasAttributes() || guide.hasAttributes())
+            morphAttributes(node, guide);
+        if (node.hasChildNodes() || guide.hasChildNodes())
+            morphChildNodes(node, guide, idMap);
     }
     else
-        throw new Error(`Cannot morph from ${node.constructor.name}, to ${guide.constructor.name}`);
+        node.replaceWith(guide.cloneNode(true));
 }
 function morphAttributes(elem, guide) {
     for (const { name } of elem.attributes)

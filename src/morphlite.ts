@@ -1,7 +1,7 @@
 type IdSet = Set<string>;
 type IdMap = Map<Node, IdSet>;
 
-export function morph(node: Node, guide: Node): void {
+export function morph(node: ChildNode, guide: ChildNode): void {
 	const idMap: IdMap = new Map();
 
 	if (isElement(node) && isElement(guide)) {
@@ -12,17 +12,15 @@ export function morph(node: Node, guide: Node): void {
 	morphNodes(node, guide, idMap);
 }
 
-function morphNodes(node: Node, guide: Node, idMap: IdMap, insertBefore?: Node, parent?: Node): void {
+function morphNodes(node: ChildNode, guide: ChildNode, idMap: IdMap, insertBefore?: Node, parent?: Node): void {
 	if (parent && insertBefore && insertBefore !== node) parent.insertBefore(guide, insertBefore);
 
 	if (isText(node) && isText(guide)) {
 		if (node.textContent !== guide.textContent) node.textContent = guide.textContent;
-	} else if (isElement(node) && isElement(guide)) {
-		if (node.tagName === guide.tagName) {
-			if (node.hasAttributes() || guide.hasAttributes()) morphAttributes(node, guide);
-			if (node.hasChildNodes() || guide.hasChildNodes()) morphChildNodes(node, guide, idMap);
-		} else node.replaceWith(guide.cloneNode(true));
-	} else throw new Error(`Cannot morph from ${node.constructor.name}, to ${guide.constructor.name}`);
+	} else if (isElement(node) && isElement(guide) && node.tagName === guide.tagName) {
+		if (node.hasAttributes() || guide.hasAttributes()) morphAttributes(node, guide);
+		if (node.hasChildNodes() || guide.hasChildNodes()) morphChildNodes(node, guide, idMap);
+	} else node.replaceWith(guide.cloneNode(true));
 }
 
 function morphAttributes(elem: Element, guide: Element): void {
