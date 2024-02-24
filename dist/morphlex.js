@@ -53,17 +53,18 @@ function morphChildNode(child, guide, idMap, parent) {
         morphNodes(child, guide, idMap);
 }
 function morphChildElement(child, guide, idMap, parent) {
+    const guideIdSet = idMap.get(guide);
+    const guideSetArray = guideIdSet ? [...guideIdSet] : [];
     let current = child;
     let nextMatchByTagName = null;
-    const b = idMap.get(guide);
     while (current) {
         if (isElement(current)) {
             if (current.id !== "" && current.id === guide.id) {
                 return morphNodes(current, guide, idMap, child, parent);
             }
             else {
-                const a = idMap.get(current);
-                if (a && b && [...a].some((it) => b.has(it))) {
+                const currentIdSet = idMap.get(current);
+                if (currentIdSet && guideSetArray.some((it) => currentIdSet.has(it))) {
                     return morphNodes(current, guide, idMap, child, parent);
                 }
                 else if (!nextMatchByTagName && current.tagName === guide.tagName) {

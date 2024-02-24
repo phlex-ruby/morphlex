@@ -53,6 +53,9 @@ function morphChildNode(child: ChildNode, guide: ChildNode, idMap: IdMap, parent
 function morphChildElement(child: Element, guide: Element, idMap: IdMap, parent: Element): void {
 	const guideIdSet = idMap.get(guide);
 
+	// Generate the array in advance of the loop
+	const guideSetArray = guideIdSet ? [...guideIdSet] : [];
+
 	let current: ChildNode | null = child;
 	let nextMatchByTagName: ChildNode | null = null;
 
@@ -65,7 +68,7 @@ function morphChildElement(child: Element, guide: Element, idMap: IdMap, parent:
 			} else {
 				const currentIdSet = idMap.get(current);
 
-				if (currentIdSet && guideIdSet && [...currentIdSet].some((it) => guideIdSet.has(it))) {
+				if (currentIdSet && guideSetArray.some((it) => currentIdSet.has(it))) {
 					// Match by idSet.
 					return morphNodes(current, guide, idMap, child, parent);
 				} else if (!nextMatchByTagName && current.tagName === guide.tagName) {
