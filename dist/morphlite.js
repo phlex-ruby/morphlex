@@ -1,84 +1,84 @@
-export function morph(from, to) {
+export function morph(node, guide) {
     const idMap = new Map();
-    if (isElement(from) && isElement(to)) {
-        populateIdMapForNode(from, idMap);
-        populateIdMapForNode(to, idMap);
+    if (isElement(node) && isElement(guide)) {
+        populateIdMapForNode(node, idMap);
+        populateIdMapForNode(guide, idMap);
     }
-    morphNodes(from, to, idMap);
+    morphNodes(node, guide, idMap);
 }
-function morphNodes(from, to, idMap, insertBefore, parent) {
-    if (parent && insertBefore && insertBefore !== from)
-        parent.insertBefore(to, insertBefore);
-    if (isText(from) && isText(to)) {
-        if (from.textContent !== to.textContent)
-            from.textContent = to.textContent;
+function morphNodes(node, guide, idMap, insertBefore, parent) {
+    if (parent && insertBefore && insertBefore !== node)
+        parent.insertBefore(guide, insertBefore);
+    if (isText(node) && isText(guide)) {
+        if (node.textContent !== guide.textContent)
+            node.textContent = guide.textContent;
     }
-    else if (isElement(from) && isElement(to)) {
-        if (from.tagName === to.tagName) {
-            if (from.attributes.length > 0 || to.attributes.length > 0)
-                morphAttributes(from, to);
-            if (from.childNodes.length > 0 || to.childNodes.length > 0)
-                morphChildNodes(from, to, idMap);
+    else if (isElement(node) && isElement(guide)) {
+        if (node.tagName === guide.tagName) {
+            if (node.attributes.length > 0 || guide.attributes.length > 0)
+                morphAttributes(node, guide);
+            if (node.childNodes.length > 0 || guide.childNodes.length > 0)
+                morphChildNodes(node, guide, idMap);
         }
         else
-            from.replaceWith(to.cloneNode(true));
+            node.replaceWith(guide.cloneNode(true));
     }
     else
-        throw new Error(`Cannot morph from ${from.constructor.name}, to ${to.constructor.name}`);
+        throw new Error(`Cannot morph from ${node.constructor.name}, to ${guide.constructor.name}`);
 }
-function morphAttributes(from, to) {
-    for (const { name } of from.attributes)
-        to.hasAttribute(name) || from.removeAttribute(name);
-    for (const { name, value } of to.attributes)
-        from.getAttribute(name) !== value && from.setAttribute(name, value);
-    if (isInput(from) && isInput(to) && from.value !== to.value)
-        from.value = to.value;
-    if (isOption(from) && isOption(to))
-        from.selected = to.selected;
-    if (isTextArea(from) && isTextArea(to))
-        from.value = to.value;
+function morphAttributes(elem, guide) {
+    for (const { name } of elem.attributes)
+        guide.hasAttribute(name) || elem.removeAttribute(name);
+    for (const { name, value } of guide.attributes)
+        elem.getAttribute(name) !== value && elem.setAttribute(name, value);
+    if (isInput(elem) && isInput(guide) && elem.value !== guide.value)
+        elem.value = guide.value;
+    if (isOption(elem) && isOption(guide))
+        elem.selected = guide.selected;
+    if (isTextArea(elem) && isTextArea(guide))
+        elem.value = guide.value;
 }
-function morphChildNodes(from, to, idMap) {
+function morphChildNodes(elem, guide, idMap) {
     var _a;
-    for (let i = 0; i < to.childNodes.length; i++) {
-        const childA = [...from.childNodes].at(i);
-        const childB = [...to.childNodes].at(i);
+    for (let i = 0; i < guide.childNodes.length; i++) {
+        const childA = [...elem.childNodes].at(i);
+        const childB = [...guide.childNodes].at(i);
         if (childA && childB)
-            morphChildNode(childA, childB, idMap, from);
+            morphChildNode(childA, childB, idMap, elem);
         else if (childB)
-            from.appendChild(childB.cloneNode(true));
+            elem.appendChild(childB.cloneNode(true));
     }
-    while (from.childNodes.length > to.childNodes.length)
-        (_a = from.lastChild) === null || _a === void 0 ? void 0 : _a.remove();
+    while (elem.childNodes.length > guide.childNodes.length)
+        (_a = elem.lastChild) === null || _a === void 0 ? void 0 : _a.remove();
 }
-function morphChildNode(from, to, idMap, parent) {
-    if (isElement(from) && isElement(to)) {
-        let current = from;
+function morphChildNode(child, guide, idMap, parent) {
+    if (isElement(child) && isElement(guide)) {
+        let current = child;
         let nextBestMatch = null;
         while (current && isElement(current)) {
-            if (current.id !== "" && current.id === to.id) {
-                morphNodes(current, to, idMap, from, parent);
+            if (current.id !== "" && current.id === guide.id) {
+                morphNodes(current, guide, idMap, child, parent);
                 break;
             }
             else {
                 const setA = idMap.get(current);
-                const setB = idMap.get(to);
+                const setB = idMap.get(guide);
                 if (setA && setB && numberOfItemsInCommon(setA, setB) > 0) {
-                    return morphNodes(current, to, idMap, from, parent);
+                    return morphNodes(current, guide, idMap, child, parent);
                 }
-                else if (!nextBestMatch && current.tagName === to.tagName) {
+                else if (!nextBestMatch && current.tagName === guide.tagName) {
                     nextBestMatch = current;
                 }
             }
             current = current.nextSibling;
         }
         if (nextBestMatch)
-            morphNodes(nextBestMatch, to, idMap, from, parent);
+            morphNodes(nextBestMatch, guide, idMap, child, parent);
         else
-            from.replaceWith(to.cloneNode(true));
+            child.replaceWith(guide.cloneNode(true));
     }
     else
-        morphNodes(from, to, idMap);
+        morphNodes(child, guide, idMap);
 }
 function populateIdMapForNode(node, idMap) {
     const parent = node.parentElement;
@@ -112,3 +112,4 @@ function isOption(element) {
 function isTextArea(element) {
     return element.localName === "textarea";
 }
+//# sourceMappingURL=morphlite.js.map
