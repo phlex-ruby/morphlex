@@ -108,4 +108,4 @@ function isOption(element) {
 function isTextArea(element) {
     return element.localName === "textarea";
 }
-//# sourceMappingURL=morphlite.js.map
+//# sourceMappingURL=morphlex.js.map

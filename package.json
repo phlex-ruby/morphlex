@@ -1,9 +1,9 @@
 {
-	"name": "morphlite",
+	"name": "morphlex",
 	"version": "0.0.1",
-	"description": "Morphlite is an attempt to create a DOM morphing function in less than 100 lines of code to use with [HTMZ](https://leanrada.com/htmz/) in small projects.",
-	"main": "dist/morphlite.js",
-	"types": "dist/morphlite.d.ts",
+	"description": "Morphlex is an attempt to create a DOM morphing function in less than 100 lines of code.",
+	"main": "dist/morphlex.js",
+	"types": "dist/morphlex.d.ts",
 	"scripts": {
 		"test": "web-test-runner test/**/*.test.js --node-resolve",
 		"build": "tsc",
