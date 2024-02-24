@@ -49,7 +49,7 @@ function morphChildNodes(elem: Element, guide: Element, idMap: IdMap): void {
 function morphChildNode(child: ChildNode, guide: ChildNode, idMap: IdMap, parent: Element): void {
 	if (isElement(child) && isElement(guide)) {
 		let current: ChildNode | null = child;
-		let nextBestMatch: ChildNode | null = null;
+		let nextMatchByTagName: ChildNode | null = null;
 
 		while (current) {
 			if (isElement(current)) {
@@ -62,8 +62,8 @@ function morphChildNode(child: ChildNode, guide: ChildNode, idMap: IdMap, parent
 
 					if (a && b && [...a].some((it) => b.has(it))) {
 						return morphNodes(current, guide, idMap, child, parent);
-					} else if (!nextBestMatch && current.tagName === guide.tagName) {
-						nextBestMatch = current;
+					} else if (!nextMatchByTagName && current.tagName === guide.tagName) {
+						nextMatchByTagName = current;
 					}
 				}
 			}
@@ -71,7 +71,7 @@ function morphChildNode(child: ChildNode, guide: ChildNode, idMap: IdMap, parent
 			current = current.nextSibling;
 		}
 
-		if (nextBestMatch) morphNodes(nextBestMatch, guide, idMap, child, parent);
+		if (nextMatchByTagName) morphNodes(nextMatchByTagName, guide, idMap, child, parent);
 		else child.replaceWith(guide.cloneNode(true));
 	} else morphNodes(child, guide, idMap);
 }
