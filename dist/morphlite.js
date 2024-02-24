@@ -63,7 +63,7 @@ function morphChildNode(child, guide, idMap, parent) {
             else {
                 const setA = idMap.get(current);
                 const setB = idMap.get(guide);
-                if (setA && setB && hasItemInCommon(setA, setB)) {
+                if (setA && setB && [...setA].some((it) => setB.has(it))) {
                     return morphNodes(current, guide, idMap, child, parent);
                 }
                 else if (!nextBestMatch && current.tagName === guide.tagName) {
@@ -95,9 +95,6 @@ function populateIdMapForNode(node, idMap) {
             current = current.parentElement;
         }
     }
-}
-function hasItemInCommon(a, b) {
-    return [...a].some((item) => b.has(item));
 }
 function isElement(node) {
     return node.nodeType === 1;
