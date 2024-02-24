@@ -59,7 +59,7 @@ function morphChildNode(child: ChildNode, guide: ChildNode, idMap: IdMap, parent
 				const setA = idMap.get(current);
 				const setB = idMap.get(guide);
 
-				if (setA && setB && numberOfItemsInCommon(setA, setB) > 0) {
+				if (setA && setB && hasItemInCommon(setA, setB)) {
 					return morphNodes(current, guide, idMap, child, parent);
 				} else if (!nextBestMatch && current.tagName === guide.tagName) {
 					nextBestMatch = current;
@@ -90,8 +90,8 @@ function populateIdMapForNode(node: ParentNode, idMap: IdMap): void {
 	}
 }
 
-function numberOfItemsInCommon<T>(a: Set<T>, b: Set<T>): number {
-	return [...a].filter((item) => b.has(item)).length;
+function hasItemInCommon<T>(a: Set<T>, b: Set<T>): boolean {
+	return [...a].some((item) => b.has(item));
 }
 
 // We cannot use `instanceof` when nodes might be from different documents,
