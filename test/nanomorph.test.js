@@ -724,7 +724,7 @@ describe("nanomorph", () => {
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
 
-		it.skip("whitespace", async () => {
+		it("whitespace", async () => {
 			const a = await fixture(html`<ul></ul>`);
 			const b = await fixture(
 				html`<ul>
