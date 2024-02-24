@@ -35,7 +35,6 @@ function morphAttributes(elem, guide) {
         elem.value = guide.value;
 }
 function morphChildNodes(elem, guide, idMap) {
-    var _a;
     for (let i = 0; i < guide.childNodes.length; i++) {
         const childA = [...elem.childNodes].at(i);
         const childB = [...guide.childNodes].at(i);
@@ -45,7 +44,7 @@ function morphChildNodes(elem, guide, idMap) {
             elem.appendChild(childB.cloneNode(true));
     }
     while (elem.childNodes.length > guide.childNodes.length)
-        (_a = elem.lastChild) === null || _a === void 0 ? void 0 : _a.remove();
+        elem.lastChild?.remove();
 }
 function morphChildNode(child, guide, idMap, parent) {
     if (isElement(child) && isElement(guide)) {
@@ -94,11 +93,11 @@ function populateIdMapForNode(node, idMap) {
         }
     }
 }
-function isElement(node) {
-    return node.nodeType === 1;
-}
 function isText(node) {
     return node.nodeType === 3;
+}
+function isElement(node) {
+    return node.nodeType === 1;
 }
 function isInput(element) {
     return element.localName === "input";
