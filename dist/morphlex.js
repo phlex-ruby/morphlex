@@ -47,35 +47,36 @@ function morphChildNodes(elem, guide, idMap) {
         elem.lastChild?.remove();
 }
 function morphChildNode(child, guide, idMap, parent) {
-    if (isElement(child) && isElement(guide)) {
-        let current = child;
-        let nextMatchByTagName = null;
-        while (current) {
-            if (isElement(current)) {
-                if (current.id !== "" && current.id === guide.id) {
-                    morphNodes(current, guide, idMap, child, parent);
-                    break;
-                }
-                else {
-                    const a = idMap.get(current);
-                    const b = idMap.get(guide);
-                    if (a && b && [...a].some((it) => b.has(it))) {
-                        return morphNodes(current, guide, idMap, child, parent);
-                    }
-                    else if (!nextMatchByTagName && current.tagName === guide.tagName) {
-                        nextMatchByTagName = current;
-                    }
-                }
-            }
-            current = current.nextSibling;
-        }
-        if (nextMatchByTagName)
-            morphNodes(nextMatchByTagName, guide, idMap, child, parent);
-        else
-            child.replaceWith(guide.cloneNode(true));
-    }
+    if (isElement(child) && isElement(guide))
+        morphChildElement(child, guide, idMap, parent);
     else
         morphNodes(child, guide, idMap);
+}
+function morphChildElement(child, guide, idMap, parent) {
+    let current = child;
+    let nextMatchByTagName = null;
+    const b = idMap.get(guide);
+    while (current) {
+        if (isElement(current)) {
+            if (current.id !== "" && current.id === guide.id) {
+                return morphNodes(current, guide, idMap, child, parent);
+            }
+            else {
+                const a = idMap.get(current);
+                if (a && b && [...a].some((it) => b.has(it))) {
+                    return morphNodes(current, guide, idMap, child, parent);
+                }
+                else if (!nextMatchByTagName && current.tagName === guide.tagName) {
+                    nextMatchByTagName = current;
+                }
+            }
+        }
+        current = current.nextSibling;
+    }
+    if (nextMatchByTagName)
+        morphNodes(nextMatchByTagName, guide, idMap, child, parent);
+    else
+        child.replaceWith(guide.cloneNode(true));
 }
 function populateIdMapForNode(node, idMap) {
     const elementsWithIds = node.querySelectorAll("[id]");
