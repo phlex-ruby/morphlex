@@ -13,6 +13,7 @@ describe("morphdom", () => {
 		expect(a.className).to.equal("bar");
 	});
 
+	// This test is broken — `a` is just a `<div>` and `b` is `null`
 	it.skip("can wipe out body", async () => {
 		const a = await fixture(
 			html`<body>
