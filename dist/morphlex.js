@@ -72,7 +72,7 @@ function morphAttributes(elem, guide) {
         if (elem.value !== guide.value)
             elem.value = guide.value;
         const text = elem.firstChild;
-        if (text && text.textContent !== guide.value)
+        if (text && isText(text) && text.textContent !== guide.value)
             text.textContent = guide.value;
     }
 }

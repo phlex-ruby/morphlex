@@ -75,9 +75,8 @@ function morphAttributes(elem: Element, guide: Element): void {
 	else if (isTextArea(elem) && isTextArea(guide)) {
 		if (elem.value !== guide.value) elem.value = guide.value;
 
-		// TextAreas only have one child node and it’s always a text node, so we can safely cast here.
-		const text = elem.firstChild as Text | null;
-		if (text && text.textContent !== guide.value) text.textContent = guide.value;
+		const text = elem.firstChild;
+		if (text && isText(text) && text.textContent !== guide.value) text.textContent = guide.value;
 	}
 }
 
