@@ -62,19 +62,19 @@ function morphAttributes(elm, ref) {
 	}
 }
 // Iterates over the child nodes of the reference element, morphing the main element’s child nodes to match.
-function morphChildNodes(elem, ref, idMap) {
-	const childNodes = [...elem.childNodes];
+function morphChildNodes(element, ref, idMap) {
+	const childNodes = [...element.childNodes];
 	const refChildNodes = [...ref.childNodes];
 	for (let i = 0; i < refChildNodes.length; i++) {
 		const child = childNodes.at(i);
 		const refChild = refChildNodes.at(i);
-		if (child && refChild) morphChildNode(child, refChild, elem, idMap);
-		else if (refChild) elem.appendChild(refChild.cloneNode(true));
+		if (child && refChild) morphChildNode(child, refChild, element, idMap);
+		else if (refChild) element.appendChild(refChild.cloneNode(true));
 		else if (child) child.remove();
 	}
 	// Remove any excess child nodes from the main element. This is separate because
 	// the loop above might modify the length of the main element’s child nodes.
-	while (elem.childNodes.length > ref.childNodes.length) elem.lastChild?.remove();
+	while (element.childNodes.length > ref.childNodes.length) element.lastChild?.remove();
 }
 function morphChildNode(child, ref, parent, idMap) {
 	if (isElement(child) && isElement(ref)) morphChildElement(child, ref, parent, idMap);
