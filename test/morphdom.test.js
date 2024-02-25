@@ -79,7 +79,7 @@ describe("morphdom", () => {
 		expect(a.children[1].textContent).to.equal("B");
 	});
 
-	it.skip("incompatible matching ids are morphed correctly", async () => {
+	it("incompatible matching ids are morphed correctly", async () => {
 		const a = await fixture(
 			html`<div>
 				<h1 id="foo" class="foo">A</h1>
@@ -107,7 +107,7 @@ describe("morphdom", () => {
 		expect(a.value).to.equal("Hello World 2");
 	});
 
-	it.skip("should transform a checkbox input type attribute", async () => {
+	it("should transform a checkbox input type attribute", async () => {
 		const a = await fixture(html`<input type="checkbox" checked="" />`);
 		a.checked = false;
 		const b = await fixture(html`<input type="text" checked="" />`);
@@ -119,7 +119,7 @@ describe("morphdom", () => {
 		expect(a.type).to.equal("text");
 	});
 
-	it.skip("should transform a checkbox input property", async () => {
+	it("should transform a checkbox input property", async () => {
 		const a = await fixture(html`<input type="checkbox" />`);
 		a.checked = false;
 		const b = await fixture(html`<input type="checkbox" />`);

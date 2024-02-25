@@ -739,7 +739,7 @@ describe("nanomorph", () => {
 		});
 	});
 
-	it.skip("allows morphing from Node to NodeList", async () => {
+	it("allows morphing from Node to NodeList", async () => {
 		const a = await fixture(html`<div><div>a</div></div>`);
 		const b = await fixture(
 			html`<div>a</div>
@@ -751,7 +751,7 @@ describe("nanomorph", () => {
 		expect(a.outerHTML).to.equal(b.outerHTML);
 	});
 
-	it.skip("allows morphing from NodeList to Node", async () => {
+	it("allows morphing from NodeList to Node", async () => {
 		const a = await fixture(
 			html`<div>a</div>
 				<div>b</div>`,
