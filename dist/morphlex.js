@@ -1,10 +1,26 @@
 export function morph(node, guide) {
     const idMap = new Map();
-    if (isElement(node) && isElement(guide)) {
+    if (isParentNode(node) && isParentNode(guide)) {
         populateIdMapForNode(node, idMap);
         populateIdMapForNode(guide, idMap);
     }
     morphNodes(node, guide, idMap);
+}
+function populateIdMapForNode(node, idMap) {
+    const elementsWithIds = node.querySelectorAll("[id]");
+    for (const elementWithId of elementsWithIds) {
+        const id = elementWithId.id;
+        if (id === "")
+            continue;
+        let current = elementWithId;
+        while (current) {
+            const idSet = idMap.get(current);
+            idSet ? idSet.add(id) : idMap.set(current, new Set([id]));
+            if (current === elementWithId)
+                break;
+            current = current.parentElement;
+        }
+    }
 }
 function morphNodes(node, guide, idMap, insertBefore, parent) {
     if (parent && insertBefore && insertBefore !== node)
@@ -26,7 +42,7 @@ function morphAttributes(elem, guide) {
     for (const { name } of elem.attributes)
         guide.hasAttribute(name) || elem.removeAttribute(name);
     for (const { name, value } of guide.attributes)
-        elem.getAttribute(name) !== value && elem.setAttribute(name, value);
+        elem.getAttribute(name) === value || elem.setAttribute(name, value);
     if (isInput(elem) && isInput(guide) && elem.value !== guide.value)
         elem.value = guide.value;
     else if (isOption(elem) && isOption(guide) && elem.selected !== guide.selected)
@@ -44,6 +60,8 @@ function morphChildNodes(elem, guide, idMap) {
             morphChildNode(child, guideChild, elem, idMap);
         else if (guideChild)
             elem.appendChild(guideChild.cloneNode(true));
+        else if (child)
+            child.remove();
     }
     while (elem.childNodes.length > guide.childNodes.length)
         elem.lastChild?.remove();
@@ -61,17 +79,17 @@ function morphChildElement(child, guide, parent, idMap) {
     let nextMatchByTagName = null;
     while (currentNode) {
         if (isElement(currentNode)) {
-            if (currentNode.id !== "" && currentNode.id === guide.id) {
+            if (currentNode.id === guide.id) {
                 return morphNodes(currentNode, guide, idMap, child, parent);
             }
-            else {
+            else if (currentNode.id !== "") {
                 const currentIdSet = idMap.get(currentNode);
                 if (currentIdSet && guideSetArray.some((it) => currentIdSet.has(it))) {
                     return morphNodes(currentNode, guide, idMap, child, parent);
                 }
-                else if (!nextMatchByTagName && currentNode.tagName === guide.tagName) {
-                    nextMatchByTagName = currentNode;
-                }
+            }
+            else if (!nextMatchByTagName && currentNode.tagName === guide.tagName) {
+                nextMatchByTagName = currentNode;
             }
         }
         currentNode = currentNode.nextSibling;
@@ -81,27 +99,11 @@ function morphChildElement(child, guide, parent, idMap) {
     else
         child.replaceWith(guide.cloneNode(true));
 }
-function populateIdMapForNode(node, idMap) {
-    const elementsWithIds = node.querySelectorAll("[id]");
-    for (const elementWithId of elementsWithIds) {
-        const id = elementWithId.id;
-        if (id === "")
-            continue;
-        let current = elementWithId;
-        while (current) {
-            const idSet = idMap.get(current);
-            idSet ? idSet.add(id) : idMap.set(current, new Set([id]));
-            if (current === elementWithId)
-                break;
-            current = current.parentElement;
-        }
-    }
-}
 function isText(node) {
-    return node.nodeType === 3;
+    return node.nodeType === Node.TEXT_NODE;
 }
 function isElement(node) {
-    return node.nodeType === 1;
+    return node.nodeType === Node.ELEMENT_NODE;
 }
 function isInput(element) {
     return element.localName === "input";
@@ -111,5 +113,10 @@ function isOption(element) {
 }
 function isTextArea(element) {
     return element.localName === "textarea";
+}
+function isParentNode(node) {
+    return (node.nodeType === Node.ELEMENT_NODE ||
+        node.nodeType === Node.DOCUMENT_NODE ||
+        node.nodeType === Node.DOCUMENT_FRAGMENT_NODE);
 }
 //# sourceMappingURL=morphlex.js.map

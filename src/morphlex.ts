@@ -4,7 +4,7 @@ type IdMap = Map<Node, IdSet>;
 export function morph(node: ChildNode, guide: ChildNode): void {
 	const idMap: IdMap = new Map();
 
-	if (isElement(node) && isElement(guide)) {
+	if (isParentNode(node) && isParentNode(guide)) {
 		populateIdMapForNode(node, idMap);
 		populateIdMapForNode(guide, idMap);
 	}
@@ -12,7 +12,26 @@ export function morph(node: ChildNode, guide: ChildNode): void {
 	morphNodes(node, guide, idMap);
 }
 
+function populateIdMapForNode(node: ParentNode, idMap: IdMap): void {
+	const elementsWithIds: NodeListOf<Element> = node.querySelectorAll("[id]");
+
+	for (const elementWithId of elementsWithIds) {
+		const id = elementWithId.id;
+		if (id === "") continue;
+		let current: Element | null = elementWithId;
+
+		while (current) {
+			const idSet: IdSet | undefined = idMap.get(current);
+			idSet ? idSet.add(id) : idMap.set(current, new Set([id]));
+			if (current === elementWithId) break;
+			current = current.parentElement;
+		}
+	}
+}
+
+// This is where we actually morph the nodes. The `morph` function exists to set up the `idMap`.
 function morphNodes(node: ChildNode, guide: ChildNode, idMap: IdMap, insertBefore?: Node, parent?: Node): void {
+	// TODO: We should extract this into a separate function.
 	if (parent && insertBefore && insertBefore !== node) parent.insertBefore(guide, insertBefore);
 
 	if (isText(node) && isText(guide)) {
@@ -24,14 +43,19 @@ function morphNodes(node: ChildNode, guide: ChildNode, idMap: IdMap, insertBefor
 }
 
 function morphAttributes(elem: Element, guide: Element): void {
+	// Remove any excess attributes from the element that aren’t present in the guide.
 	for (const { name } of elem.attributes) guide.hasAttribute(name) || elem.removeAttribute(name);
-	for (const { name, value } of guide.attributes) elem.getAttribute(name) !== value && elem.setAttribute(name, value);
 
+	// Copy attributes from the guide to the element, if they don’t already match.
+	for (const { name, value } of guide.attributes) elem.getAttribute(name) === value || elem.setAttribute(name, value);
+
+	// For certain types of elements, we need to do some extra work to ensure the element’s state matches the guide’s state.
 	if (isInput(elem) && isInput(guide) && elem.value !== guide.value) elem.value = guide.value;
 	else if (isOption(elem) && isOption(guide) && elem.selected !== guide.selected) elem.selected = guide.selected;
 	else if (isTextArea(elem) && isTextArea(guide) && elem.value !== guide.value) elem.value = guide.value;
 }
 
+// Iterates over the child nodes of the guide element, morphing the main element’s child nodes to match.
 function morphChildNodes(elem: Element, guide: Element, idMap: IdMap): void {
 	const childNodes = [...elem.childNodes];
 	const guideChildNodes = [...guide.childNodes];
@@ -42,9 +66,11 @@ function morphChildNodes(elem: Element, guide: Element, idMap: IdMap): void {
 
 		if (child && guideChild) morphChildNode(child, guideChild, elem, idMap);
 		else if (guideChild) elem.appendChild(guideChild.cloneNode(true));
+		else if (child) child.remove();
 	}
 
-	// This is separate because the loop above might modify the length of the element's child nodes.
+	// Remove any excess child nodes from the main element. This is separate because
+	// the loop above might modify the length of the main element’s child nodes.
 	while (elem.childNodes.length > guide.childNodes.length) elem.lastChild?.remove();
 }
 
@@ -65,18 +91,16 @@ function morphChildElement(child: Element, guide: Element, parent: Element, idMa
 	// Try find a match by idSet, while also looking out for the next best match by tagName.
 	while (currentNode) {
 		if (isElement(currentNode)) {
-			if (currentNode.id !== "" && currentNode.id === guide.id) {
-				// Exact match by id.
+			if (currentNode.id === guide.id) {
 				return morphNodes(currentNode, guide, idMap, child, parent);
-			} else {
+			} else if (currentNode.id !== "") {
 				const currentIdSet = idMap.get(currentNode);
 
 				if (currentIdSet && guideSetArray.some((it) => currentIdSet.has(it))) {
-					// Match by idSet.
 					return morphNodes(currentNode, guide, idMap, child, parent);
-				} else if (!nextMatchByTagName && currentNode.tagName === guide.tagName) {
-					nextMatchByTagName = currentNode;
 				}
+			} else if (!nextMatchByTagName && currentNode.tagName === guide.tagName) {
+				nextMatchByTagName = currentNode;
 			}
 		}
 
@@ -87,33 +111,16 @@ function morphChildElement(child: Element, guide: Element, parent: Element, idMa
 	else child.replaceWith(guide.cloneNode(true));
 }
 
-function populateIdMapForNode(node: ParentNode, idMap: IdMap): void {
-	const elementsWithIds: NodeListOf<Element> = node.querySelectorAll("[id]");
-
-	for (const elementWithId of elementsWithIds) {
-		const id = elementWithId.id;
-		if (id === "") continue;
-		let current: Element | null = elementWithId;
-
-		while (current) {
-			const idSet: IdSet | undefined = idMap.get(current);
-			idSet ? idSet.add(id) : idMap.set(current, new Set([id]));
-			if (current === elementWithId) break;
-			current = current.parentElement;
-		}
-	}
-}
-
 // We cannot use `instanceof` when nodes might be from different documents,
 // so we use type guards instead. This keeps TypeScript happy, while doing
 // the necessary checks at runtime.
 
 function isText(node: Node): node is Text {
-	return node.nodeType === 3;
+	return node.nodeType === Node.TEXT_NODE;
 }
 
 function isElement(node: Node): node is Element {
-	return node.nodeType === 1;
+	return node.nodeType === Node.ELEMENT_NODE;
 }
 
 function isInput(element: Element): element is HTMLInputElement {
@@ -126,4 +133,12 @@ function isOption(element: Element): element is HTMLOptionElement {
 
 function isTextArea(element: Element): element is HTMLTextAreaElement {
 	return element.localName === "textarea";
+}
+
+function isParentNode(node: Node): node is ParentNode {
+	return (
+		node.nodeType === Node.ELEMENT_NODE ||
+		node.nodeType === Node.DOCUMENT_NODE ||
+		node.nodeType === Node.DOCUMENT_FRAGMENT_NODE
+	);
 }
