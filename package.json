@@ -1,6 +1,7 @@
 {
 	"name": "morphlex",
 	"version": "0.0.1",
+	"type": "module",
 	"description": "Morphlex is an attempt to create a DOM morphing function in less than 100 lines of code.",
 	"main": "dist/morphlex.js",
 	"types": "dist/morphlex.d.ts",
@@ -8,13 +9,16 @@
 		"test": "web-test-runner test/**/*.test.js --node-resolve",
 		"build": "tsc",
 		"watch": "tsc -w",
-		"test:watch": "npm run test -- --watch"
+		"test:watch": "npm run test -- --watch",
+		"lint": "eslint ./src"
 	},
 	"author": "Joel Drapper",
 	"license": "MIT",
 	"devDependencies": {
 		"@open-wc/testing": "^3.0.0-next.5",
 		"@web/test-runner": "^0.18.0",
-		"typescript": "^5.3.3"
+		"eslint": "^8.57.0",
+		"typescript": "^5.3.3",
+		"typescript-eslint": "^7.0.2"
 	}
 }
