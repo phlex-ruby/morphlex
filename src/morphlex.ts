@@ -68,7 +68,7 @@ function morphAttributes(elem: Element, guide: Element): void {
 		if (elem.disabled !== guide.disabled) elem.disabled = guide.disabled;
 		if (elem.indeterminate !== guide.indeterminate) elem.indeterminate = guide.indeterminate;
 		if (elem.type !== "file" && elem.value !== guide.value) elem.value = guide.value;
-	} else if (isOption(elem) && isOption(guide) && elem.value !== guide.value) elem.value = guide.value;
+	} else if (isOption(elem) && isOption(guide) && elem.selected !== guide.selected) elem.selected = guide.selected;
 	else if (isTextArea(elem) && isTextArea(guide)) {
 		if (elem.value !== guide.value) elem.value = guide.value;
 
