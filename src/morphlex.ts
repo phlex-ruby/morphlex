@@ -12,6 +12,7 @@ export function morph(node: ChildNode, guide: ChildNode): void {
 	morphNodes(node, guide, idMap);
 }
 
+// For each node with an ID, push that ID into the IDSet on the IDMap, for each of its parent elements.
 function populateIdMapForNode(node: ParentNode, idMap: IdMap): void {
 	const elementsWithIds: NodeListOf<Element> = node.querySelectorAll("[id]");
 
