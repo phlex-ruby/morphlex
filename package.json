@@ -7,7 +7,7 @@
 	"types": "dist/morphlex.d.ts",
 	"scripts": {
 		"test": "web-test-runner test/**/*.test.js --node-resolve",
-		"build": "tsc",
+		"build": "tsc && prettier --write ./src ./dist",
 		"watch": "tsc -w",
 		"test:watch": "npm run test -- --watch",
 		"lint": "eslint ./src",
@@ -21,6 +21,7 @@
 		"@open-wc/testing": "^3.0.0-next.5",
 		"@web/test-runner": "^0.18.0",
 		"eslint": "^8.57.0",
+		"prettier": "^3.2.5",
 		"terser": "^5.28.1",
 		"typescript": "^5.3.3",
 		"typescript-eslint": "^7.0.2"
