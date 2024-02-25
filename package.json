@@ -1,6 +1,6 @@
 {
 	"name": "morphlex",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"type": "module",
 	"description": "Morphlex is an attempt to create a DOM morphing function in less than 100 lines of code.",
 	"main": "dist/morphlex.js",
@@ -12,7 +12,8 @@
 		"test:watch": "npm run test -- --watch",
 		"lint": "eslint ./src",
 		"minify": "terser dist/morphlex.js -o dist/morphlex.min.js -c -m --module",
-		"prepare": "npm run build && npm run minify"
+		"prepare": "npm run build && npm run minify",
+		"ship": "npm run prepare && npm run test && npm run lint && npm publish"
 	},
 	"author": "Joel Drapper",
 	"license": "MIT",
