@@ -66,14 +66,16 @@ function morphAttributes(elem: Element, guide: Element): void {
 	elem.nodeValue;
 
 	// For certain types of elements, we need to do some extra work to ensure the element’s state matches the guide’s state.
-	if (isInput(elem) && isInput(guide) && elem.type !== "file") {
-		if (elem.value !== guide.value) elem.value = guide.value;
+	if (isInput(elem) && isInput(guide)) {
 		if (elem.checked !== guide.checked) elem.checked = guide.checked;
 		if (elem.disabled !== guide.disabled) elem.disabled = guide.disabled;
-	} else if (isOption(elem) && isOption(guide) && elem.selected !== guide.selected) elem.selected = guide.selected;
+		if (elem.indeterminate !== guide.indeterminate) elem.indeterminate = guide.indeterminate;
+		if (elem.type !== "file" && elem.value !== guide.value) elem.value = guide.value;
+	} else if (isOption(elem) && isOption(guide) && elem.value !== guide.value) elem.value = guide.value;
 	else if (isTextArea(elem) && isTextArea(guide)) {
 		if (elem.value !== guide.value) elem.value = guide.value;
 
+		// TextAreas only have one child node and it’s always a text node, so we can safely cast here.
 		const text = elem.firstChild as Text | null;
 		if (text && text.textContent !== guide.value) text.textContent = guide.value;
 	}

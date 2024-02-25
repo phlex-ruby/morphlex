@@ -56,16 +56,18 @@ function morphAttributes(elem, guide) {
     for (const { name, value } of guide.attributes)
         elem.getAttribute(name) === value || elem.setAttribute(name, value);
     elem.nodeValue;
-    if (isInput(elem) && isInput(guide) && elem.type !== "file") {
-        if (elem.value !== guide.value)
-            elem.value = guide.value;
+    if (isInput(elem) && isInput(guide)) {
         if (elem.checked !== guide.checked)
             elem.checked = guide.checked;
         if (elem.disabled !== guide.disabled)
             elem.disabled = guide.disabled;
+        if (elem.indeterminate !== guide.indeterminate)
+            elem.indeterminate = guide.indeterminate;
+        if (elem.type !== "file" && elem.value !== guide.value)
+            elem.value = guide.value;
     }
-    else if (isOption(elem) && isOption(guide) && elem.selected !== guide.selected)
-        elem.selected = guide.selected;
+    else if (isOption(elem) && isOption(guide) && elem.value !== guide.value)
+        elem.value = guide.value;
     else if (isTextArea(elem) && isTextArea(guide)) {
         if (elem.value !== guide.value)
             elem.value = guide.value;
