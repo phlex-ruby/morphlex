@@ -5,20 +5,23 @@ export function morph(node: ChildNode, guide: ChildNode): void {
 	const idMap: IdMap = new Map();
 
 	if (isParentNode(node) && isParentNode(guide)) {
-		populateIdMapForNode(node, idMap);
-		populateIdMapForNode(guide, idMap);
+		populateIdSets(node, idMap);
+		populateIdSets(guide, idMap);
 	}
 
 	morphNodes(node, guide, idMap);
 }
 
-// For each node with an ID, push that ID into the IDSet on the IDMap, for each of its parent elements.
-function populateIdMapForNode(node: ParentNode, idMap: IdMap): void {
+// For each node with an ID, push that ID into the IdSet on the IdMap, for each of its parent elements.
+function populateIdSets(node: ParentNode, idMap: IdMap): void {
 	const elementsWithIds: NodeListOf<Element> = node.querySelectorAll("[id]");
 
 	for (const elementWithId of elementsWithIds) {
 		const id = elementWithId.id;
+
+		// Ignore empty IDs
 		if (id === "") continue;
+
 		let current: Element | null = elementWithId;
 
 		while (current) {
@@ -35,12 +38,22 @@ function morphNodes(node: ChildNode, guide: ChildNode, idMap: IdMap, insertBefor
 	// TODO: We should extract this into a separate function.
 	if (parent && insertBefore && insertBefore !== node) parent.insertBefore(guide, insertBefore);
 
-	if (isText(node) && isText(guide)) {
-		if (node.textContent !== guide.textContent) node.textContent = guide.textContent;
-	} else if (isElement(node) && isElement(guide) && node.tagName === guide.tagName) {
-		if (node.hasAttributes() || guide.hasAttributes()) morphAttributes(node, guide);
-		if (node.hasChildNodes() || guide.hasChildNodes()) morphChildNodes(node, guide, idMap);
-	} else node.replaceWith(guide.cloneNode(true));
+	if (isElement(node) && isElement(guide) && node.tagName === guide.tagName) {
+		// We need to check if the element is an input, option, or textarea here, because they have
+		// special attributes not covered by the isEqualNode check.
+		if (!isInput(node) && !isOption(node) && !isTextArea(node) && node.isEqualNode(guide)) return;
+		else {
+			if (node.hasAttributes() || guide.hasAttributes()) morphAttributes(node, guide);
+			if (node.hasChildNodes() || guide.hasChildNodes()) morphChildNodes(node, guide, idMap);
+		}
+	} else {
+		if (node.isEqualNode(guide)) return;
+		else if (isText(node) && isText(guide)) {
+			if (node.textContent !== guide.textContent) node.textContent = guide.textContent;
+		} else if (isComment(node) && isComment(guide)) {
+			if (node.nodeValue !== guide.nodeValue) node.nodeValue = guide.nodeValue;
+		} else node.replaceWith(guide.cloneNode(true));
+	}
 }
 
 function morphAttributes(elem: Element, guide: Element): void {
@@ -50,10 +63,20 @@ function morphAttributes(elem: Element, guide: Element): void {
 	// Copy attributes from the guide to the element, if they don’t already match.
 	for (const { name, value } of guide.attributes) elem.getAttribute(name) === value || elem.setAttribute(name, value);
 
+	elem.nodeValue;
+
 	// For certain types of elements, we need to do some extra work to ensure the element’s state matches the guide’s state.
-	if (isInput(elem) && isInput(guide) && elem.value !== guide.value) elem.value = guide.value;
-	else if (isOption(elem) && isOption(guide) && elem.selected !== guide.selected) elem.selected = guide.selected;
-	else if (isTextArea(elem) && isTextArea(guide) && elem.value !== guide.value) elem.value = guide.value;
+	if (isInput(elem) && isInput(guide) && elem.type !== "file") {
+		if (elem.value !== guide.value) elem.value = guide.value;
+		if (elem.checked !== guide.checked) elem.checked = guide.checked;
+		if (elem.disabled !== guide.disabled) elem.disabled = guide.disabled;
+	} else if (isOption(elem) && isOption(guide) && elem.selected !== guide.selected) elem.selected = guide.selected;
+	else if (isTextArea(elem) && isTextArea(guide)) {
+		if (elem.value !== guide.value) elem.value = guide.value;
+
+		const text = elem.firstChild as Text | null;
+		if (text && text.textContent !== guide.value) text.textContent = guide.value;
+	}
 }
 
 // Iterates over the child nodes of the guide element, morphing the main element’s child nodes to match.
@@ -117,11 +140,15 @@ function morphChildElement(child: Element, guide: Element, parent: Element, idMa
 // the necessary checks at runtime.
 
 function isText(node: Node): node is Text {
-	return node.nodeType === Node.TEXT_NODE;
+	return node.nodeType === 3;
+}
+
+function isComment(node: Node): node is Comment {
+	return node.nodeType === 8;
 }
 
 function isElement(node: Node): node is Element {
-	return node.nodeType === Node.ELEMENT_NODE;
+	return node.nodeType === 1;
 }
 
 function isInput(element: Element): element is HTMLInputElement {
@@ -137,9 +164,5 @@ function isTextArea(element: Element): element is HTMLTextAreaElement {
 }
 
 function isParentNode(node: Node): node is ParentNode {
-	return (
-		node.nodeType === Node.ELEMENT_NODE ||
-		node.nodeType === Node.DOCUMENT_NODE ||
-		node.nodeType === Node.DOCUMENT_FRAGMENT_NODE
-	);
+	return node.nodeType === 1 || node.nodeType === 9 || node.nodeType === 11;
 }
