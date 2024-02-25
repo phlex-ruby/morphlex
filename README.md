@@ -19,8 +19,10 @@ Initially, we will build support for rendering fragments into [phlex](https://gi
 ```javascript
 import { morph } from "morphlex";
 
-morph(currentNode, guideNode);
+morph(currentNode, referenceNode);
 ```
+
+The `currentNode` will be morphed into the state of the `referenceNode`. The `referenceNode` will not be mutated in this process.
 
 ## Run tests
 
