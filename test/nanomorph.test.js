@@ -129,7 +129,7 @@ describe("nanomorph", () => {
 			expect(a.value).to.equal("");
 		});
 
-		it.skip("if new tree has value in HTML and old tree does too, set value from new tree", async () => {
+		it("if new tree has value in HTML and old tree does too, set value from new tree", async () => {
 			const a = await fixture(html`<input type="text" value="howdy" />`);
 			const b = await fixture(html`<input type="text" value="hi" />`);
 
@@ -216,7 +216,7 @@ describe("nanomorph", () => {
 				expect(a.checked).to.equal(false);
 			});
 
-			it.skip("if new tree has no checked and old tree has checked mutated to true, set value from new tree", async () => {
+			it("if new tree has no checked and old tree has checked mutated to true, set value from new tree", async () => {
 				const a = await fixture(html`<input type="checkbox" />`);
 				const b = await fixture(html`<input type="checkbox" />`);
 				b.checked = true;
@@ -227,7 +227,7 @@ describe("nanomorph", () => {
 				expect(a.checked).to.equal(true);
 			});
 
-			it.skip("if new tree has checked=false and old tree has checked mutated to true, set value from new tree", async () => {
+			it("if new tree has checked=false and old tree has checked mutated to true, set value from new tree", async () => {
 				const a = await fixture(html`<input type="checkbox" checked=${false} />`);
 				const b = await fixture(html`<input type="checkbox" />`);
 				b.checked = true;
