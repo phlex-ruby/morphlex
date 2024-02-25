@@ -35,9 +35,11 @@ function morphAttributes(elem, guide) {
         elem.value = guide.value;
 }
 function morphChildNodes(elem, guide, idMap) {
-    for (let i = 0; i < guide.childNodes.length; i++) {
-        const childA = [...elem.childNodes].at(i);
-        const childB = [...guide.childNodes].at(i);
+    const childNodes = [...elem.childNodes];
+    const guideChildNodes = [...guide.childNodes];
+    for (let i = 0; i < guideChildNodes.length; i++) {
+        const childA = childNodes.at(i);
+        const childB = guideChildNodes.at(i);
         if (childA && childB)
             morphChildNode(childA, childB, idMap, elem);
         else if (childB)
