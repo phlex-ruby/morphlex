@@ -1,6 +1,6 @@
 {
 	"name": "morphlex",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"type": "module",
 	"description": "Morphlex is an attempt to create a DOM morphing function in less than 100 lines of code.",
 	"main": "dist/morphlex.js",
