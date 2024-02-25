@@ -34,10 +34,7 @@ function populateIdSets(node: ParentNode, idMap: IdMap): void {
 }
 
 // This is where we actually morph the nodes. The `morph` function exists to set up the `idMap`.
-function morphNodes(node: ChildNode, guide: ChildNode, idMap: IdMap, insertBefore?: Node, parent?: Node): void {
-	// TODO: We should extract this into a separate function.
-	if (parent && insertBefore && insertBefore !== node) parent.insertBefore(guide, insertBefore);
-
+function morphNodes(node: ChildNode, guide: ChildNode, idMap: IdMap): void {
 	if (isElement(node) && isElement(guide) && node.tagName === guide.tagName) {
 		// We need to check if the element is an input, option, or textarea here, because they have
 		// special attributes not covered by the isEqualNode check.
@@ -117,12 +114,14 @@ function morphChildElement(child: Element, guide: Element, parent: Element, idMa
 	while (currentNode) {
 		if (isElement(currentNode)) {
 			if (currentNode.id === guide.id) {
-				return morphNodes(currentNode, guide, idMap, child, parent);
+				parent.insertBefore(currentNode, child);
+				return morphNodes(currentNode, guide, idMap);
 			} else if (currentNode.id !== "") {
 				const currentIdSet = idMap.get(currentNode);
 
 				if (currentIdSet && guideSetArray.some((it) => currentIdSet.has(it))) {
-					return morphNodes(currentNode, guide, idMap, child, parent);
+					parent.insertBefore(currentNode, child);
+					return morphNodes(currentNode, guide, idMap);
 				}
 			} else if (!nextMatchByTagName && currentNode.tagName === guide.tagName) {
 				nextMatchByTagName = currentNode;
@@ -132,8 +131,10 @@ function morphChildElement(child: Element, guide: Element, parent: Element, idMa
 		currentNode = currentNode.nextSibling;
 	}
 
-	if (nextMatchByTagName) morphNodes(nextMatchByTagName, guide, idMap, child, parent);
-	else child.replaceWith(guide.cloneNode(true));
+	if (nextMatchByTagName) {
+		parent.insertBefore(nextMatchByTagName, child);
+		morphNodes(nextMatchByTagName, guide, idMap);
+	} else child.replaceWith(guide.cloneNode(true));
 }
 
 // We cannot use `instanceof` when nodes might be from different documents,
