@@ -10,7 +10,7 @@
 		"build": "tsc && prettier --write ./src ./dist",
 		"watch": "tsc -w",
 		"test:watch": "npm run test -- --watch",
-		"lint": "eslint ./src",
+		"lint": "prettier --check ./src ./dist && eslint ./src",
 		"minify": "terser dist/morphlex.js -o dist/morphlex.min.js -c -m --module",
 		"prepare": "npm run build && npm run minify",
 		"ship": "npm run prepare && npm run test && npm run lint && npm publish"
