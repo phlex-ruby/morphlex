@@ -38,12 +38,12 @@ function morphChildNodes(elem, guide, idMap) {
     const childNodes = [...elem.childNodes];
     const guideChildNodes = [...guide.childNodes];
     for (let i = 0; i < guideChildNodes.length; i++) {
-        const childA = childNodes.at(i);
-        const childB = guideChildNodes.at(i);
-        if (childA && childB)
-            morphChildNode(childA, childB, idMap, elem);
-        else if (childB)
-            elem.appendChild(childB.cloneNode(true));
+        const child = childNodes.at(i);
+        const guideChild = guideChildNodes.at(i);
+        if (child && guideChild)
+            morphChildNode(child, guideChild, idMap, elem);
+        else if (guideChild)
+            elem.appendChild(guideChild.cloneNode(true));
     }
     while (elem.childNodes.length > guide.childNodes.length)
         elem.lastChild?.remove();
