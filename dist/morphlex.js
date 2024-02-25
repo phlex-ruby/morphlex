@@ -41,40 +41,40 @@ function morphChildNodes(elem, guide, idMap) {
         const child = childNodes.at(i);
         const guideChild = guideChildNodes.at(i);
         if (child && guideChild)
-            morphChildNode(child, guideChild, idMap, elem);
+            morphChildNode(child, guideChild, elem, idMap);
         else if (guideChild)
             elem.appendChild(guideChild.cloneNode(true));
     }
     while (elem.childNodes.length > guide.childNodes.length)
         elem.lastChild?.remove();
 }
-function morphChildNode(child, guide, idMap, parent) {
+function morphChildNode(child, guide, parent, idMap) {
     if (isElement(child) && isElement(guide))
-        morphChildElement(child, guide, idMap, parent);
+        morphChildElement(child, guide, parent, idMap);
     else
         morphNodes(child, guide, idMap);
 }
-function morphChildElement(child, guide, idMap, parent) {
+function morphChildElement(child, guide, parent, idMap) {
     const guideIdSet = idMap.get(guide);
     const guideSetArray = guideIdSet ? [...guideIdSet] : [];
-    let current = child;
+    let currentNode = child;
     let nextMatchByTagName = null;
-    while (current) {
-        if (isElement(current)) {
-            if (current.id !== "" && current.id === guide.id) {
-                return morphNodes(current, guide, idMap, child, parent);
+    while (currentNode) {
+        if (isElement(currentNode)) {
+            if (currentNode.id !== "" && currentNode.id === guide.id) {
+                return morphNodes(currentNode, guide, idMap, child, parent);
             }
             else {
-                const currentIdSet = idMap.get(current);
+                const currentIdSet = idMap.get(currentNode);
                 if (currentIdSet && guideSetArray.some((it) => currentIdSet.has(it))) {
-                    return morphNodes(current, guide, idMap, child, parent);
+                    return morphNodes(currentNode, guide, idMap, child, parent);
                 }
-                else if (!nextMatchByTagName && current.tagName === guide.tagName) {
-                    nextMatchByTagName = current;
+                else if (!nextMatchByTagName && currentNode.tagName === guide.tagName) {
+                    nextMatchByTagName = currentNode;
                 }
             }
         }
-        current = current.nextSibling;
+        currentNode = currentNode.nextSibling;
     }
     if (nextMatchByTagName)
         morphNodes(nextMatchByTagName, guide, idMap, child, parent);

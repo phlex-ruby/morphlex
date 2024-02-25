@@ -40,7 +40,7 @@ function morphChildNodes(elem: Element, guide: Element, idMap: IdMap): void {
 		const child = childNodes.at(i);
 		const guideChild = guideChildNodes.at(i);
 
-		if (child && guideChild) morphChildNode(child, guideChild, idMap, elem);
+		if (child && guideChild) morphChildNode(child, guideChild, elem, idMap);
 		else if (guideChild) elem.appendChild(guideChild.cloneNode(true));
 	}
 
@@ -48,12 +48,12 @@ function morphChildNodes(elem: Element, guide: Element, idMap: IdMap): void {
 	while (elem.childNodes.length > guide.childNodes.length) elem.lastChild?.remove();
 }
 
-function morphChildNode(child: ChildNode, guide: ChildNode, idMap: IdMap, parent: Element): void {
-	if (isElement(child) && isElement(guide)) morphChildElement(child, guide, idMap, parent);
+function morphChildNode(child: ChildNode, guide: ChildNode, parent: Element, idMap: IdMap): void {
+	if (isElement(child) && isElement(guide)) morphChildElement(child, guide, parent, idMap);
 	else morphNodes(child, guide, idMap);
 }
 
-function morphChildElement(child: Element, guide: Element, idMap: IdMap, parent: Element): void {
+function morphChildElement(child: Element, guide: Element, parent: Element, idMap: IdMap): void {
 	const guideIdSet = idMap.get(guide);
 
 	// Generate the array in advance of the loop
