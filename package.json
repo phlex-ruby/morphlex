@@ -1,10 +1,16 @@
 {
 	"name": "morphlex",
 	"version": "0.0.3",
+	"author": "Joel Drapper",
+	"license": "MIT",
 	"type": "module",
-	"description": "Morphlex is an attempt to create a DOM morphing function in less than 100 lines of code.",
+	"description": "A safe, tiny (less than 1KB minified & gzipped), optimal DOM morphing library written in TypeScript.",
 	"main": "dist/morphlex.js",
 	"types": "dist/morphlex.d.ts",
+	"funding": {
+		"type": "github",
+		"url": "https://github.com/sponsors/joeldrapper"
+	},
 	"scripts": {
 		"test": "web-test-runner test/**/*.test.js --node-resolve",
 		"build": "tsc && prettier --write ./src ./dist",
@@ -15,8 +21,6 @@
 		"prepare": "npm run build && npm run minify",
 		"ship": "npm run prepare && npm run test && npm run lint && npm publish"
 	},
-	"author": "Joel Drapper",
-	"license": "MIT",
 	"devDependencies": {
 		"@open-wc/testing": "^3.0.0-next.5",
 		"@web/test-runner": "^0.18.0",
