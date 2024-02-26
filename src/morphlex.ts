@@ -1,38 +1,22 @@
 type IdSet = Set<string>;
 type IdMap = WeakMap<ReadOnlyNode<Node>, IdSet>;
 
+// Maps to a type that can only read properties
+type StrongReadOnly<T> = {
+	readonly [K in keyof T as T[K] extends Function ? never : K]: T[K];
+};
+
 type ReadOnlyNode<T extends Node> =
 	| T
-	| {
-			// Here, `deep` must be `true` and the return type is not read-only because it’s a new node.
+	| (StrongReadOnly<T> & {
 			readonly cloneNode: (deep: true) => Node;
-
-			// These return read-only node lists to maintain the read-only-ness of associated nodes.
 			readonly childNodes: ReadOnlyNodeList<ChildNode>;
 			readonly querySelectorAll: (query: string) => ReadOnlyNodeList<Element>;
-
-			// This returns a read-only node, so that the node can’t be mutated.
 			readonly parentElement: ReadOnlyNode<Element> | null;
-
-			// Other non-mutating functions
 			readonly hasAttribute: (name: string) => boolean;
 			readonly hasAttributes: () => boolean;
 			readonly hasChildNodes: () => boolean;
-
-			// Other properties
-			readonly attributes: NamedNodeMap;
-			readonly checked: boolean;
-			readonly disabled: boolean;
-			readonly id: string;
-			readonly indeterminate: boolean;
-			readonly localName: string;
-			readonly nodeType: number;
-			readonly nodeValue: string | null;
-			readonly selected: boolean;
-			readonly tagName: string;
-			readonly textContent: string;
-			readonly value: string;
-	  };
+	  });
 
 type ReadOnlyNodeList<T extends Node> =
 	| NodeListOf<T>
