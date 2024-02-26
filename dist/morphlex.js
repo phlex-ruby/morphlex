@@ -28,14 +28,10 @@ function morphNodes(node, ref, idMap) {
 	if (isElement(node) && isElement(ref) && node.tagName === ref.tagName) {
 		// We need to check if the element is an input, option, or textarea here, because they have
 		// special attributes not covered by the isEqualNode check.
-		if (!isInput(node) && !isOption(node) && !isTextArea(node) && node.isEqualNode(ref)) return;
-		else {
-			if (node.hasAttributes() || ref.hasAttributes()) morphAttributes(node, ref);
-			if (node.hasChildNodes() || ref.hasChildNodes()) morphChildNodes(node, ref, idMap);
-		}
+		if (node.hasAttributes() || ref.hasAttributes()) morphAttributes(node, ref);
+		if (node.hasChildNodes() || ref.hasChildNodes()) morphChildNodes(node, ref, idMap);
 	} else {
-		if (node.isEqualNode(ref)) return;
-		else if (isText(node) && isText(ref)) {
+		if (isText(node) && isText(ref)) {
 			if (node.textContent !== ref.textContent) node.textContent = ref.textContent;
 		} else if (isComment(node) && isComment(ref)) {
 			if (node.nodeValue !== ref.nodeValue) node.nodeValue = ref.nodeValue;
