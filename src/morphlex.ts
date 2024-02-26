@@ -11,19 +11,21 @@ interface ReadOnlyNodeInterface<T extends Node> {
 	readonly cloneNode: (deep: true) => Node;
 
 	// These return read-only node lists to maintain the read-only-ness of associated nodes.
-	readonly childNodes: NodeListOf<ChildNode> | ReadOnlyNodeList<ChildNode>;
-	readonly querySelectorAll: (query: string) => NodeListOf<Element> | ReadOnlyNodeList<Element>;
+	readonly childNodes: ReadOnlyNodeList<ChildNode>;
+	readonly querySelectorAll: (query: string) => ReadOnlyNodeList<Element>;
 
 	// This returns a read-only node, so that the node can’t be mutated.
-	readonly parentElement: ReadOnlyNodeInterface<T> | Element | null;
+	readonly parentElement: ReadOnlyNode<Element> | null;
+
+	// Other functions
+	readonly hasAttribute: (name: string) => boolean;
+	readonly hasAttributes: () => boolean;
+	readonly hasChildNodes: () => boolean;
 
 	// Other properties
 	readonly attributes: NamedNodeMap;
 	readonly checked: boolean;
 	readonly disabled: boolean;
-	readonly hasAttribute: (name: string) => boolean;
-	readonly hasAttributes: () => boolean;
-	readonly hasChildNodes: () => boolean;
 	readonly id: string;
 	readonly indeterminate: boolean;
 	readonly localName: string;
@@ -37,15 +39,16 @@ interface ReadOnlyNodeInterface<T extends Node> {
 
 // This interface for a read-only node list works to maintain the read-only-ness of
 // associated nodes. See ReadOnlyNodeInterface[childNodes] for example.
-interface ReadOnlyNodeList<T extends Node> {
-	[Symbol.iterator](): IterableIterator<T | ReadOnlyNodeInterface<T>>;
-	readonly [index: number]: T | ReadOnlyNodeInterface<T>;
+interface ReadOnlyNodeListInterface<T extends Node> {
+	[Symbol.iterator](): IterableIterator<ReadOnlyNode<T>>;
+	readonly [index: number]: ReadOnlyNode<T>;
 	readonly length: NodeListOf<T>["length"];
 }
 
 // This generic type sets up the intersection between the specific Node type
 // and the read-only interface.
 type ReadOnlyNode<T extends Node> = T | ReadOnlyNodeInterface<T>;
+type ReadOnlyNodeList<T extends Node> = NodeListOf<T> | ReadOnlyNodeListInterface<T>;
 
 export function morph(node: ChildNode, reference: ChildNode): void {
 	const readonlyReference = reference as ReadOnlyNode<ChildNode>;
