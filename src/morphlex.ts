@@ -6,6 +6,7 @@ type StrongReadOnly<T> = {
 	readonly [K in keyof T as T[K] extends Function ? never : K]: T[K];
 };
 
+// Maps a Node to a type limited to read-only properties and methods for that Node
 type ReadOnlyNode<T extends Node> =
 	| T
 	| (StrongReadOnly<T> & {
@@ -18,6 +19,7 @@ type ReadOnlyNode<T extends Node> =
 			readonly hasChildNodes: () => boolean;
 	  });
 
+// Maps a node to a read-only node list of nodes of that type
 type ReadOnlyNodeList<T extends Node> =
 	| NodeListOf<T>
 	| {
