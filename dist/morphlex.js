@@ -1,5 +1,5 @@
 export function morph(node, reference) {
-	const idMap = new Map();
+	const idMap = new WeakMap();
 	if (isParentNode(node) && isParentNode(reference)) {
 		populateIdSets(node, idMap);
 		populateIdSets(reference, idMap);

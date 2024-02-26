@@ -1,8 +1,8 @@
 type IdSet = Set<string>;
-type IdMap = Map<Node, IdSet>;
+type IdMap = WeakMap<Node, IdSet>;
 
 export function morph(node: ChildNode, reference: ChildNode): void {
-	const idMap: IdMap = new Map();
+	const idMap: IdMap = new WeakMap();
 
 	if (isParentNode(node) && isParentNode(reference)) {
 		populateIdSets(node, idMap);
