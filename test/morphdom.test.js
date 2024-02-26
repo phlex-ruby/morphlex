@@ -42,19 +42,17 @@ describe("morphdom", () => {
 		expect(a.firstElementChild.textContent).to.equal("B");
 	});
 
-	it.skip("does keep inner dup id", async () => {
-		const a = await fixture(html`<div id="el-1" class="foo"><div id="el-1">A</div></div>`);
-		const b = await fixture(html`<div id="el-1" class="zoo"><div id="el-inner">B</div></div>`);
+	it("does keep inner dup id", async () => {
+		const node = await fixture(html`<div id="el-1" class="foo"><div id="el-1">A</div></div>`);
+		const ref = await fixture(html`<div id="el-1" class="zoo"><div id="el-inner">B</div></div>`);
 
-		morph(a, b);
+		morph(node, ref);
 
-		expect(a.outerHTML).to.equal(b.outerHTML);
-		expect(a.className).to.equal("zoo");
-		expect(a.id).to.equal("el-1");
-		expect(a.children[0].id).to.equal("el-1");
-		expect(a.children[0].textContent).to.equal("A");
-		expect(a.children[1].id).to.equal("el-inner");
-		expect(a.children[1].textContent).to.equal("B");
+		expect(node.outerHTML).to.equal(ref.outerHTML);
+		expect(node.className).to.equal("zoo");
+		expect(node.id).to.equal("el-1");
+		expect(node.firstChild.id).to.equal("el-inner");
+		expect(node.firstChild.textContent).to.equal("B");
 	});
 
 	it.skip("nested duplicate ids are morphed correctly", async () => {
