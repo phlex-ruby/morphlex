@@ -88,8 +88,6 @@ function morphAttributes(elm: Element, ref: ReadOnlyNode<Element>): void {
 	// Copy attributes from the reference to the element, if they don’t already match.
 	for (const { name, value } of ref.attributes) elm.getAttribute(name) === value || elm.setAttribute(name, value);
 
-	elm.nodeValue;
-
 	// For certain types of elements, we need to do some extra work to ensure
 	// the element’s state matches the reference elements’ state.
 	if (isInput(elm) && isInput(ref)) {
@@ -145,15 +143,17 @@ function morphChildElement(child: Element, ref: ReadOnlyNode<Element>, parent: E
 			if (currentNode.id === ref.id) {
 				parent.insertBefore(currentNode, child);
 				return morphNodes(currentNode, ref, idMap);
-			} else if (currentNode.id !== "") {
-				const currentIdSet = idMap.get(currentNode);
+			} else {
+				if (currentNode.id !== "") {
+					const currentIdSet = idMap.get(currentNode);
 
-				if (currentIdSet && refSetArray.some((it) => currentIdSet.has(it))) {
-					parent.insertBefore(currentNode, child);
-					return morphNodes(currentNode, ref, idMap);
+					if (currentIdSet && refSetArray.some((it) => currentIdSet.has(it))) {
+						parent.insertBefore(currentNode, child);
+						return morphNodes(currentNode, ref, idMap);
+					} else if (!nextMatchByTagName && currentNode.tagName === ref.tagName) {
+						nextMatchByTagName = currentNode;
+					}
 				}
-			} else if (!nextMatchByTagName && currentNode.tagName === ref.tagName) {
-				nextMatchByTagName = currentNode;
 			}
 		}
 
@@ -161,7 +161,7 @@ function morphChildElement(child: Element, ref: ReadOnlyNode<Element>, parent: E
 	}
 
 	if (nextMatchByTagName) {
-		parent.insertBefore(nextMatchByTagName, child);
+		if (nextMatchByTagName !== child) parent.insertBefore(nextMatchByTagName, child);
 		morphNodes(nextMatchByTagName, ref, idMap);
 	} else child.replaceWith(ref.cloneNode(true));
 }
