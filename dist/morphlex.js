@@ -49,25 +49,38 @@ function morphAttributes(elm, ref, opts) {
 	// Remove any excess attributes from the element that aren’t present in the reference.
 	for (const { name } of elm.attributes) ref.hasAttribute(name) || elm.removeAttribute(name);
 	// Copy attributes from the reference to the element, if they don’t already match.
-	for (const { name, value } of ref.attributes) elm.getAttribute(name) === value || elm.setAttribute(name, value);
+	for (const { name, value } of ref.attributes) {
+		const previousValue = elm.getAttribute(name);
+		if (previousValue !== value && (opts.callbacks.beforeAttributeUpdated?.(name, value, elm) ?? true)) {
+			elm.setAttribute(name, value);
+			opts.callbacks.afterAttributeUpdated?.(name, previousValue, elm);
+		}
+	}
 	// For certain types of elements, we need to do some extra work to ensure
 	// the element’s state matches the reference elements’ state.
 	if (isInput(elm) && isInput(ref)) {
-		if (elm.checked !== ref.checked) elm.checked = ref.checked;
-		if (elm.disabled !== ref.disabled) elm.disabled = ref.disabled;
-		if (elm.indeterminate !== ref.indeterminate) elm.indeterminate = ref.indeterminate;
+		updateProperty(elm, "checked", ref.checked, opts);
+		updateProperty(elm, "disabled", ref.disabled, opts);
+		updateProperty(elm, "indeterminate", ref.indeterminate, opts);
 		if (
 			elm.type !== "file" &&
-			elm.value !== ref.value &&
 			!(opts.ignoreActiveValue && document.activeElement === elm) &&
 			!(opts.preserveModifiedValues && elm.value !== elm.defaultValue)
 		)
-			elm.value = ref.value;
-	} else if (isOption(elm) && isOption(ref) && elm.selected !== ref.selected) elm.selected = ref.selected;
+			updateProperty(elm, "value", ref.value, opts);
+	} else if (isOption(elm) && isOption(ref)) updateProperty(elm, "selected", ref.selected, opts);
 	else if (isTextArea(elm) && isTextArea(ref)) {
-		if (elm.value !== ref.value) elm.value = ref.value;
+		updateProperty(elm, "value", ref.value, opts);
+		// TODO: Do we need this? If so, how do we integrate with the callback?
 		const text = elm.firstChild;
 		if (text && isText(text) && text.textContent !== ref.value) text.textContent = ref.value;
+	}
+}
+function updateProperty(element, propertyName, newValue, opts) {
+	const previousValue = element[propertyName];
+	if (previousValue !== newValue && (opts.callbacks.beforePropertyUpdated?.(propertyName, newValue, element) ?? true)) {
+		element[propertyName] = newValue;
+		opts.callbacks.afterPropertyUpdated?.(propertyName, previousValue, element);
 	}
 }
 // Iterates over the child nodes of the reference element, morphing the main element’s child nodes to match.
@@ -79,15 +92,11 @@ function morphChildNodes(element, ref, idMap, opts) {
 		const refChild = refChildNodes.at(i);
 		if (child && refChild) morphChildNode(child, refChild, element, idMap, opts);
 		else if (refChild) {
-			const event = new CustomEvent("beforeNodeInserted", {
-				bubbles: true,
-				cancelable: true,
-				detail: {
-					node: refChild,
-				},
-			});
-			if (!event.defaultPrevented) element.appendChild(refChild.cloneNode(true));
-		} else if (child) child.remove();
+			element.appendChild(refChild.cloneNode(true));
+		} else if (child && (opts.callbacks.beforeNodeRemoved?.(child) ?? true)) {
+			child.remove();
+			opts.callbacks.afterNodeRemoved?.(child);
+		}
 	}
 	// Remove any excess child nodes from the main element. This is separate because
 	// the loop above might modify the length of the main element’s child nodes.
