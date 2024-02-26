@@ -346,7 +346,7 @@ describe("nanomorph", () => {
 		});
 
 		describe("indeterminate", () => {
-			it.skip("if new tree has no indeterminate and old tree has indeterminate mutated to true, set value from new tree", async () => {
+			it("if new tree has no indeterminate and old tree has indeterminate mutated to true, set value from new tree", async () => {
 				const a = await fixture(html`<input type="checkbox" />`);
 				const b = await fixture(html`<input type="checkbox" />`);
 				b.indeterminate = true;
@@ -590,7 +590,7 @@ describe("nanomorph", () => {
 	});
 
 	describe("use id as a key hint", () => {
-		it.skip("appends an element", async () => {
+		it("appends an element", async () => {
 			const a = await fixture(
 				html`<ul>
 					<li id="a"></li>
