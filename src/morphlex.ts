@@ -1,54 +1,46 @@
 type IdSet = Set<string>;
 type IdMap = WeakMap<ReadOnlyNode<Node>, IdSet>;
 
-// This maps out the read-only interface that we use on reference nodes.
-// Because this is used with an intersection type, it doesn’t matter that
-// it includes properties that aren’t on all types of node. The important
-// thing is it doesn’t include any setters or methods that could mutate
-// the node.
-interface ReadOnlyNodeInterface<T extends Node> {
-	// Here, `deep` must be `true` and the return type is not read-only because it’s a new node.
-	readonly cloneNode: (deep: true) => Node;
+type ReadOnlyNode<T extends Node> =
+	| T
+	| {
+			// Here, `deep` must be `true` and the return type is not read-only because it’s a new node.
+			readonly cloneNode: (deep: true) => Node;
 
-	// These return read-only node lists to maintain the read-only-ness of associated nodes.
-	readonly childNodes: ReadOnlyNodeList<ChildNode>;
-	readonly querySelectorAll: (query: string) => ReadOnlyNodeList<Element>;
+			// These return read-only node lists to maintain the read-only-ness of associated nodes.
+			readonly childNodes: ReadOnlyNodeList<ChildNode>;
+			readonly querySelectorAll: (query: string) => ReadOnlyNodeList<Element>;
 
-	// This returns a read-only node, so that the node can’t be mutated.
-	readonly parentElement: ReadOnlyNode<Element> | null;
+			// This returns a read-only node, so that the node can’t be mutated.
+			readonly parentElement: ReadOnlyNode<Element> | null;
 
-	// Other functions
-	readonly hasAttribute: (name: string) => boolean;
-	readonly hasAttributes: () => boolean;
-	readonly hasChildNodes: () => boolean;
+			// Other non-mutating functions
+			readonly hasAttribute: (name: string) => boolean;
+			readonly hasAttributes: () => boolean;
+			readonly hasChildNodes: () => boolean;
 
-	// Other properties
-	readonly attributes: NamedNodeMap;
-	readonly checked: boolean;
-	readonly disabled: boolean;
-	readonly id: string;
-	readonly indeterminate: boolean;
-	readonly localName: string;
-	readonly nodeType: number;
-	readonly nodeValue: string | null;
-	readonly selected: boolean;
-	readonly tagName: string;
-	readonly textContent: string;
-	readonly value: string;
-}
+			// Other properties
+			readonly attributes: NamedNodeMap;
+			readonly checked: boolean;
+			readonly disabled: boolean;
+			readonly id: string;
+			readonly indeterminate: boolean;
+			readonly localName: string;
+			readonly nodeType: number;
+			readonly nodeValue: string | null;
+			readonly selected: boolean;
+			readonly tagName: string;
+			readonly textContent: string;
+			readonly value: string;
+	  };
 
-// This interface for a read-only node list works to maintain the read-only-ness of
-// associated nodes. See ReadOnlyNodeInterface[childNodes] for example.
-interface ReadOnlyNodeListInterface<T extends Node> {
-	[Symbol.iterator](): IterableIterator<ReadOnlyNode<T>>;
-	readonly [index: number]: ReadOnlyNode<T>;
-	readonly length: NodeListOf<T>["length"];
-}
-
-// This generic type sets up the intersection between the specific Node type
-// and the read-only interface.
-type ReadOnlyNode<T extends Node> = T | ReadOnlyNodeInterface<T>;
-type ReadOnlyNodeList<T extends Node> = NodeListOf<T> | ReadOnlyNodeListInterface<T>;
+type ReadOnlyNodeList<T extends Node> =
+	| NodeListOf<T>
+	| {
+			[Symbol.iterator](): IterableIterator<ReadOnlyNode<T>>;
+			readonly [index: number]: ReadOnlyNode<T>;
+			readonly length: NodeListOf<T>["length"];
+	  };
 
 export function morph(node: ChildNode, reference: ChildNode): void {
 	const readonlyReference = reference as ReadOnlyNode<ChildNode>;
