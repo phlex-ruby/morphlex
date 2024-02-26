@@ -7,25 +7,32 @@ type IdMap = WeakMap<ReadOnlyNode<Node>, IdSet>;
 // thing is it doesn’t include any setters or methods that could mutate
 // the node.
 interface ReadOnlyNodeInterface<T extends Node> {
-	readonly attributes: Element["attributes"];
-	readonly checked: HTMLInputElement["checked"];
-	readonly childNodes: ParentNode["childNodes"] | ReadOnlyNodeList<ChildNode>;
-	readonly cloneNode: Node["cloneNode"];
-	readonly disabled: HTMLInputElement["disabled"];
-	readonly hasAttribute: Element["hasAttribute"];
-	readonly hasAttributes: Element["hasAttributes"];
-	readonly hasChildNodes: ParentNode["hasChildNodes"];
-	readonly id: Element["id"];
-	readonly indeterminate: HTMLInputElement["indeterminate"];
-	readonly localName: Element["localName"];
-	readonly nodeType: Node["nodeType"];
-	readonly nodeValue: Node["nodeValue"];
-	readonly parentElement: ReadOnlyNodeInterface<T> | Element["parentElement"];
+	// Here, `deep` must be `true` and the return type is not read-only because it’s a new node.
+	readonly cloneNode: (deep: true) => Node;
+
+	// These return read-only node lists to maintain the read-only-ness of associated nodes.
+	readonly childNodes: NodeListOf<ChildNode> | ReadOnlyNodeList<ChildNode>;
 	readonly querySelectorAll: (query: string) => NodeListOf<Element> | ReadOnlyNodeList<Element>;
-	readonly selected: HTMLOptionElement["selected"];
-	readonly tagName: Element["tagName"];
-	readonly textContent: Node["textContent"];
-	readonly value: HTMLInputElement["value"];
+
+	// This returns a read-only node, so that the node can’t be mutated.
+	readonly parentElement: ReadOnlyNodeInterface<T> | Element | null;
+
+	// Other properties
+	readonly attributes: NamedNodeMap;
+	readonly checked: boolean;
+	readonly disabled: boolean;
+	readonly hasAttribute: (name: string) => boolean;
+	readonly hasAttributes: () => boolean;
+	readonly hasChildNodes: () => boolean;
+	readonly id: string;
+	readonly indeterminate: boolean;
+	readonly localName: string;
+	readonly nodeType: number;
+	readonly nodeValue: string | null;
+	readonly selected: boolean;
+	readonly tagName: string;
+	readonly textContent: string;
+	readonly value: string;
 }
 
 // This interface for a read-only node list works to maintain the read-only-ness of
