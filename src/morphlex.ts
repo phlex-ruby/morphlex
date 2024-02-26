@@ -17,6 +17,7 @@ type ReadOnlyNode<T extends Node> =
 			readonly hasAttribute: (name: string) => boolean;
 			readonly hasAttributes: () => boolean;
 			readonly hasChildNodes: () => boolean;
+			readonly children: ReadOnlyNodeList<Element>;
 	  });
 
 // Maps a node to a read-only node list of nodes of that type
@@ -65,7 +66,16 @@ function populateIdSets(node: ReadOnlyNode<ParentNode>, idMap: IdMap): void {
 function morphNodes(node: ChildNode, ref: ReadOnlyNode<ChildNode>, idMap: IdMap): void {
 	if (isElement(node) && isElement(ref) && node.tagName === ref.tagName) {
 		if (node.hasAttributes() || ref.hasAttributes()) morphAttributes(node, ref);
-		if (node.hasChildNodes() || ref.hasChildNodes()) morphChildNodes(node, ref, idMap);
+		if (isHead(node) && isHead(ref)) {
+			const refChildNodes: Map<string, ReadOnlyNode<Element>> = new Map();
+			for (const child of ref.children) refChildNodes.set(child.outerHTML, child);
+			for (const child of node.children) {
+				const key = child.outerHTML;
+				const refChild = refChildNodes.get(key);
+				refChild ? refChildNodes.delete(key) : child.remove();
+			}
+			for (const refChild of refChildNodes.values()) node.appendChild(refChild.cloneNode(true));
+		} else if (node.hasChildNodes() || ref.hasChildNodes()) morphChildNodes(node, ref, idMap);
 	} else {
 		if (isText(node) && isText(ref)) {
 			if (node.textContent !== ref.textContent) node.textContent = ref.textContent;
@@ -198,6 +208,12 @@ function isTextArea(element: Element): element is HTMLTextAreaElement;
 function isTextArea(element: ReadOnlyNode<Element>): element is ReadOnlyNode<HTMLTextAreaElement>;
 function isTextArea(element: Element | ReadOnlyNode<Element>): boolean {
 	return element.localName === "textarea";
+}
+
+function isHead(element: Element): element is HTMLHeadElement;
+function isHead(element: ReadOnlyNode<Element>): element is ReadOnlyNode<HTMLHeadElement>;
+function isHead(element: Element | ReadOnlyNode<Element>): boolean {
+	return element.localName === "head";
 }
 
 function isParentNode(node: Node): node is ParentNode;

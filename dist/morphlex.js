@@ -26,10 +26,17 @@ function populateIdSets(node, idMap) {
 // This is where we actually morph the nodes. The `morph` function exists to set up the `idMap`.
 function morphNodes(node, ref, idMap) {
 	if (isElement(node) && isElement(ref) && node.tagName === ref.tagName) {
-		// We need to check if the element is an input, option, or textarea here, because they have
-		// special attributes not covered by the isEqualNode check.
 		if (node.hasAttributes() || ref.hasAttributes()) morphAttributes(node, ref);
-		if (node.hasChildNodes() || ref.hasChildNodes()) morphChildNodes(node, ref, idMap);
+		if (isHead(node) && isHead(ref)) {
+			const refChildNodes = new Map();
+			for (const child of ref.children) refChildNodes.set(child.outerHTML, child);
+			for (const child of node.children) {
+				const key = child.outerHTML;
+				const refChild = refChildNodes.get(key);
+				refChild ? refChildNodes.delete(key) : child.remove();
+			}
+			for (const refChild of refChildNodes.values()) node.appendChild(refChild.cloneNode(true));
+		} else if (node.hasChildNodes() || ref.hasChildNodes()) morphChildNodes(node, ref, idMap);
 	} else {
 		if (isText(node) && isText(ref)) {
 			if (node.textContent !== ref.textContent) node.textContent = ref.textContent;
@@ -124,6 +131,9 @@ function isOption(element) {
 }
 function isTextArea(element) {
 	return element.localName === "textarea";
+}
+function isHead(element) {
+	return element.localName === "head";
 }
 function isParentNode(node) {
 	return node.nodeType === 1 || node.nodeType === 9 || node.nodeType === 11;
