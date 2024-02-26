@@ -1,10 +1,11 @@
 export function morph(node, reference) {
+	const readonlyReference = reference;
 	const idMap = new WeakMap();
-	if (isParentNode(node) && isParentNode(reference)) {
+	if (isParentNode(node) && isParentNode(readonlyReference)) {
 		populateIdSets(node, idMap);
-		populateIdSets(reference, idMap);
+		populateIdSets(readonlyReference, idMap);
 	}
-	morphNodes(node, reference, idMap);
+	morphNodes(node, readonlyReference, idMap);
 }
 // For each node with an ID, push that ID into the IdSet on the IdMap, for each of its parent elements.
 function populateIdSets(node, idMap) {
@@ -109,9 +110,6 @@ function morphChildElement(child, ref, parent, idMap) {
 		morphNodes(nextMatchByTagName, ref, idMap);
 	} else child.replaceWith(ref.cloneNode(true));
 }
-// We cannot use `instanceof` when nodes might be from different documents,
-// so we use type guards instead. This keeps TypeScript happy, while doing
-// the necessary checks at runtime.
 function isText(node) {
 	return node.nodeType === 3;
 }
