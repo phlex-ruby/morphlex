@@ -27,6 +27,30 @@ interface Callbacks {
 
 export class Idiomorph {
 	static morph(node: ChildNode, referenceNode: ChildNode, options: Options = {}) {
-		morph(node, referenceNode);
+		const morphlexOptions: Options = {};
+		let reference = referenceNode;
+
+		if (options.morphStyle === "innerHTML") {
+			reference = referenceNode.childNodes;
+		}
+
+		if (options.ignoreActive) throw new Error("The Idiomorph option `ignoreActive` is not supported by Morphlex.");
+		if (options.ignoreActiveValue) morphlexOptions["ignoreActiveValue"] = options.ignoreActiveValue;
+
+		const beforeNodeAdded = options?.callbacks?.beforeNodeAdded;
+		if (beforeNodeAdded) {
+			morphlexOptions["beforeNodeAdded"] = (node) => {
+				return beforeNodeAdded(node);
+			};
+		}
+
+		const afterNodeAdded = options?.callbacks?.afterNodeAdded;
+		if (afterNodeAdded) {
+			morphlexOptions["afterNodeAdded"] = (node) => {
+				afterNodeAdded(node);
+			};
+		}
+
+		morph(node, reference, morphlexOptions);
 	}
 }
