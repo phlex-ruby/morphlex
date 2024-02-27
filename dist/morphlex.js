@@ -50,9 +50,9 @@ function morphNode(node, ref, context) {
 function morphAttributes(element, ref, context) {
 	// Remove any excess attributes from the element that aren’t present in the reference.
 	for (const { name, value } of element.attributes) {
-		if (!ref.hasAttribute(name) && (context.beforeAttributeUpdated?.({ attributeName: name, newValue: null, element }) ?? true)) {
+		if (!ref.hasAttribute(name) && (context.beforeAttributeUpdated?.({ element, attributeName: name, newValue: null }) ?? true)) {
 			element.removeAttribute(name);
-			context.afterAttributeUpdated?.({ attributeName: name, previousValue: value, element });
+			context.afterAttributeUpdated?.({ element, attributeName: name, previousValue: value });
 		}
 	}
 	// Copy attributes from the reference to the element, if they don’t already match.
@@ -60,10 +60,10 @@ function morphAttributes(element, ref, context) {
 		const previousValue = element.getAttribute(name);
 		if (
 			previousValue !== value &&
-			(context.beforeAttributeUpdated?.({ attributeName: name, newValue: value, element }) ?? true)
+			(context.beforeAttributeUpdated?.({ element, attributeName: name, newValue: value }) ?? true)
 		) {
 			element.setAttribute(name, value);
-			context.afterAttributeUpdated?.({ attributeName: name, previousValue, element });
+			context.afterAttributeUpdated?.({ element, attributeName: name, previousValue });
 		}
 	}
 	// For certain types of elements, we need to do some extra work to ensure
@@ -107,9 +107,9 @@ function morphChildNodes(element, ref, context) {
 }
 function updateProperty(node, propertyName, newValue, context) {
 	const previousValue = node[propertyName];
-	if (previousValue !== newValue && (context.beforePropertyUpdated?.({ propertyName, newValue, node }) ?? true)) {
+	if (previousValue !== newValue && (context.beforePropertyUpdated?.({ node, propertyName, newValue }) ?? true)) {
 		node[propertyName] = newValue;
-		context.afterPropertyUpdated?.({ propertyName, previousValue, node });
+		context.afterPropertyUpdated?.({ node, propertyName, previousValue });
 	}
 }
 function morphChildNode(child, ref, parent, context) {

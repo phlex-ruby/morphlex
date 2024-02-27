@@ -9,40 +9,40 @@ export interface Options {
 	beforeNodeRemoved?: ({ oldNode }: { oldNode: Node }) => boolean;
 	afterNodeRemoved?: ({ oldNode }: { oldNode: Node }) => void;
 	beforeAttributeUpdated?: ({
+		element,
 		attributeName,
 		newValue,
-		element,
 	}: {
+		element: Element;
 		attributeName: string;
 		newValue: string | null;
-		element: Element;
 	}) => boolean;
 	afterAttributeUpdated?: ({
+		element,
 		attributeName,
 		previousValue,
-		element,
 	}: {
+		element: Element;
 		attributeName: string;
 		previousValue: string | null;
-		element: Element;
 	}) => void;
 	beforePropertyUpdated?: ({
+		node,
 		propertyName,
 		newValue,
-		node,
 	}: {
+		node: Node;
 		propertyName: ObjectKey;
 		newValue: unknown;
-		node: Node;
 	}) => boolean;
 	afterPropertyUpdated?: ({
+		node,
 		propertyName,
 		previousValue,
-		node,
 	}: {
+		node: Node;
 		propertyName: ObjectKey;
 		previousValue: unknown;
-		node: Node;
 	}) => void;
 }
 export declare function morph(node: ChildNode, reference: ChildNode, options?: Options): void;

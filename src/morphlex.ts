@@ -42,43 +42,43 @@ export interface Options {
 	afterNodeRemoved?: ({ oldNode }: { oldNode: Node }) => void;
 
 	beforeAttributeUpdated?: ({
+		element,
 		attributeName,
 		newValue,
-		element,
 	}: {
+		element: Element;
 		attributeName: string;
 		newValue: string | null;
-		element: Element;
 	}) => boolean;
 
 	afterAttributeUpdated?: ({
+		element,
 		attributeName,
 		previousValue,
-		element,
 	}: {
+		element: Element;
 		attributeName: string;
 		previousValue: string | null;
-		element: Element;
 	}) => void;
 
 	beforePropertyUpdated?: ({
+		node,
 		propertyName,
 		newValue,
-		node,
 	}: {
+		node: Node;
 		propertyName: ObjectKey;
 		newValue: unknown;
-		node: Node;
 	}) => boolean;
 
 	afterPropertyUpdated?: ({
+		node,
 		propertyName,
 		previousValue,
-		node,
 	}: {
+		node: Node;
 		propertyName: ObjectKey;
 		previousValue: unknown;
-		node: Node;
 	}) => void;
 }
 
@@ -147,9 +147,9 @@ function morphNode(node: ChildNode, ref: ReadonlyNode<ChildNode>, context: Conte
 function morphAttributes(element: Element, ref: ReadonlyNode<Element>, context: Context): void {
 	// Remove any excess attributes from the element that aren’t present in the reference.
 	for (const { name, value } of element.attributes) {
-		if (!ref.hasAttribute(name) && (context.beforeAttributeUpdated?.({ attributeName: name, newValue: null, element }) ?? true)) {
+		if (!ref.hasAttribute(name) && (context.beforeAttributeUpdated?.({ element, attributeName: name, newValue: null }) ?? true)) {
 			element.removeAttribute(name);
-			context.afterAttributeUpdated?.({ attributeName: name, previousValue: value, element });
+			context.afterAttributeUpdated?.({ element, attributeName: name, previousValue: value });
 		}
 	}
 
@@ -158,10 +158,10 @@ function morphAttributes(element: Element, ref: ReadonlyNode<Element>, context: 
 		const previousValue = element.getAttribute(name);
 		if (
 			previousValue !== value &&
-			(context.beforeAttributeUpdated?.({ attributeName: name, newValue: value, element }) ?? true)
+			(context.beforeAttributeUpdated?.({ element, attributeName: name, newValue: value }) ?? true)
 		) {
 			element.setAttribute(name, value);
-			context.afterAttributeUpdated?.({ attributeName: name, previousValue, element });
+			context.afterAttributeUpdated?.({ element, attributeName: name, previousValue });
 		}
 	}
 
@@ -212,9 +212,9 @@ function morphChildNodes(element: Element, ref: ReadonlyNode<Element>, context: 
 
 function updateProperty<N extends Node, P extends keyof N>(node: N, propertyName: P, newValue: N[P], context: Context): void {
 	const previousValue = node[propertyName];
-	if (previousValue !== newValue && (context.beforePropertyUpdated?.({ propertyName, newValue, node }) ?? true)) {
+	if (previousValue !== newValue && (context.beforePropertyUpdated?.({ node, propertyName, newValue }) ?? true)) {
 		node[propertyName] = newValue;
-		context.afterPropertyUpdated?.({ propertyName, previousValue, node });
+		context.afterPropertyUpdated?.({ node, propertyName, previousValue });
 	}
 }
 
