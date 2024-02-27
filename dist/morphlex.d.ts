@@ -1,5 +1,5 @@
 type ObjectKey = string | number | symbol;
-interface Options {
+export interface Options {
 	ignoreActiveValue?: boolean;
 	preserveModifiedValues?: boolean;
 	beforeNodeMorphed?: ({ node, referenceNode }: { node: Node; referenceNode: Node }) => boolean;

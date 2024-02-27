@@ -28,7 +28,7 @@ type ReadonlyNodeList<T extends Node> =
 			readonly length: NodeListOf<T>["length"];
 	  };
 
-interface Options {
+export interface Options {
 	ignoreActiveValue?: boolean;
 	preserveModifiedValues?: boolean;
 
