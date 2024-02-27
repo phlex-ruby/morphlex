@@ -48,6 +48,10 @@ interface Options {
 	afterPropertyUpdated?: (propertyName: ObjectKey, previousValue: unknown, node: Node) => void;
 }
 
+type Context = Options & {
+	idMap: IdMap;
+};
+
 export function morph(node: ChildNode, reference: ChildNode, options: Options = {}): void {
 	const readonlyReference = reference as ReadonlyNode<ChildNode>;
 	const idMap: IdMap = new WeakMap();
@@ -57,7 +61,7 @@ export function morph(node: ChildNode, reference: ChildNode, options: Options = 
 		populateIdSets(readonlyReference, idMap);
 	}
 
-	morphNode(node, readonlyReference, idMap, options);
+	morphNode(node, readonlyReference, { ...options, idMap });
 }
 
 // For each node with an ID, push that ID into the IdSet on the IdMap, for each of its parent elements.
@@ -82,12 +86,12 @@ function populateIdSets(node: ReadonlyNode<ParentNode>, idMap: IdMap): void {
 }
 
 // This is where we actually morph the nodes. The `morph` function exists to set up the `idMap`.
-function morphNode(node: ChildNode, ref: ReadonlyNode<ChildNode>, idMap: IdMap, options: Options): void {
+function morphNode(node: ChildNode, ref: ReadonlyNode<ChildNode>, context: Context): void {
 	const writableRef = ref as ChildNode;
-	if (!(options.beforeNodeMorphed?.(node, writableRef) ?? true)) return;
+	if (!(context.beforeNodeMorphed?.(node, writableRef) ?? true)) return;
 
 	if (isElement(node) && isElement(ref) && node.tagName === ref.tagName) {
-		if (node.hasAttributes() || ref.hasAttributes()) morphAttributes(node, ref, options);
+		if (node.hasAttributes() || ref.hasAttributes()) morphAttributes(node, ref, context);
 		if (isHead(node) && isHead(ref)) {
 			const refChildNodes: Map<string, ReadonlyNode<Element>> = new Map();
 			for (const child of ref.children) refChildNodes.set(child.outerHTML, child);
@@ -96,56 +100,56 @@ function morphNode(node: ChildNode, ref: ReadonlyNode<ChildNode>, idMap: IdMap, 
 				const refChild = refChildNodes.get(key);
 				refChild ? refChildNodes.delete(key) : child.remove(); // TODO add callback
 			}
-			for (const refChild of refChildNodes.values()) appendChild(node, refChild.cloneNode(true), options);
-		} else if (node.hasChildNodes() || ref.hasChildNodes()) morphChildNodes(node, ref, idMap, options);
+			for (const refChild of refChildNodes.values()) appendChild(node, refChild.cloneNode(true), context);
+		} else if (node.hasChildNodes() || ref.hasChildNodes()) morphChildNodes(node, ref, context);
 	} else {
 		if (isText(node) && isText(ref)) {
-			updateProperty(node, "textContent", ref.textContent, options);
+			updateProperty(node, "textContent", ref.textContent, context);
 		} else if (isComment(node) && isComment(ref)) {
-			updateProperty(node, "nodeValue", ref.nodeValue, options);
-		} else replaceNode(node, ref.cloneNode(true), options);
+			updateProperty(node, "nodeValue", ref.nodeValue, context);
+		} else replaceNode(node, ref.cloneNode(true), context);
 	}
 
-	options.afterNodeMorphed?.(node);
+	context.afterNodeMorphed?.(node);
 }
 
-function morphAttributes(element: Element, ref: ReadonlyNode<Element>, options: Options): void {
+function morphAttributes(element: Element, ref: ReadonlyNode<Element>, context: Context): void {
 	// Remove any excess attributes from the element that aren’t present in the reference.
 	for (const { name } of element.attributes) ref.hasAttribute(name) || element.removeAttribute(name);
 
 	// Copy attributes from the reference to the element, if they don’t already match.
 	for (const { name, value } of ref.attributes) {
 		const previousValue = element.getAttribute(name);
-		if (previousValue !== value && (options.beforeAttributeUpdated?.(name, value, element) ?? true)) {
+		if (previousValue !== value && (context.beforeAttributeUpdated?.(name, value, element) ?? true)) {
 			element.setAttribute(name, value);
-			options.afterAttributeUpdated?.(name, previousValue, element);
+			context.afterAttributeUpdated?.(name, previousValue, element);
 		}
 	}
 
 	// For certain types of elements, we need to do some extra work to ensure
 	// the element’s state matches the reference elements’ state.
 	if (isInput(element) && isInput(ref)) {
-		updateProperty(element, "checked", ref.checked, options);
-		updateProperty(element, "disabled", ref.disabled, options);
-		updateProperty(element, "indeterminate", ref.indeterminate, options);
+		updateProperty(element, "checked", ref.checked, context);
+		updateProperty(element, "disabled", ref.disabled, context);
+		updateProperty(element, "indeterminate", ref.indeterminate, context);
 		if (
 			element.type !== "file" &&
-			!(options.ignoreActiveValue && document.activeElement === element) &&
-			!(options.preserveModifiedValues && element.value !== element.defaultValue)
+			!(context.ignoreActiveValue && document.activeElement === element) &&
+			!(context.preserveModifiedValues && element.value !== element.defaultValue)
 		)
-			updateProperty(element, "value", ref.value, options);
-	} else if (isOption(element) && isOption(ref)) updateProperty(element, "selected", ref.selected, options);
+			updateProperty(element, "value", ref.value, context);
+	} else if (isOption(element) && isOption(ref)) updateProperty(element, "selected", ref.selected, context);
 	else if (isTextArea(element) && isTextArea(ref)) {
-		updateProperty(element, "value", ref.value, options);
+		updateProperty(element, "value", ref.value, context);
 
 		// TODO: Do we need this? If so, how do we integrate with the callback?
 		const text = element.firstChild;
-		if (text && isText(text)) updateProperty(text, "textContent", ref.value, options);
+		if (text && isText(text)) updateProperty(text, "textContent", ref.value, context);
 	}
 }
 
 // Iterates over the child nodes of the reference element, morphing the main element’s child nodes to match.
-function morphChildNodes(element: Element, ref: ReadonlyNode<Element>, idMap: IdMap, options: Options): void {
+function morphChildNodes(element: Element, ref: ReadonlyNode<Element>, context: Context): void {
 	const childNodes = [...element.childNodes];
 	const refChildNodes = [...ref.childNodes];
 
@@ -153,12 +157,12 @@ function morphChildNodes(element: Element, ref: ReadonlyNode<Element>, idMap: Id
 		const child = childNodes.at(i);
 		const refChild = refChildNodes.at(i);
 
-		if (child && refChild) morphChildNode(child, refChild, element, idMap, options);
+		if (child && refChild) morphChildNode(child, refChild, element, context);
 		else if (refChild) {
-			appendChild(element, refChild.cloneNode(true), options);
-		} else if (child && (options.beforeNodeRemoved?.(child) ?? true)) {
+			appendChild(element, refChild.cloneNode(true), context);
+		} else if (child && (context.beforeNodeRemoved?.(child) ?? true)) {
 			child.remove();
-			options.afterNodeRemoved?.(child);
+			context.afterNodeRemoved?.(child);
 		}
 	}
 
@@ -167,21 +171,21 @@ function morphChildNodes(element: Element, ref: ReadonlyNode<Element>, idMap: Id
 	while (element.childNodes.length > ref.childNodes.length) element.lastChild?.remove();
 }
 
-function updateProperty<N extends Node, P extends keyof N>(element: N, propertyName: P, newValue: N[P], options: Options): void {
+function updateProperty<N extends Node, P extends keyof N>(element: N, propertyName: P, newValue: N[P], context: Context): void {
 	const previousValue = element[propertyName];
-	if (previousValue !== newValue && (options.beforePropertyUpdated?.(propertyName, newValue, element) ?? true)) {
+	if (previousValue !== newValue && (context.beforePropertyUpdated?.(propertyName, newValue, element) ?? true)) {
 		element[propertyName] = newValue;
-		options.afterPropertyUpdated?.(propertyName, previousValue, element);
+		context.afterPropertyUpdated?.(propertyName, previousValue, element);
 	}
 }
 
-function morphChildNode(child: ChildNode, ref: ReadonlyNode<ChildNode>, parent: Element, idMap: IdMap, options: Options): void {
-	if (isElement(child) && isElement(ref)) morphChildElement(child, ref, parent, idMap, options);
-	else morphNode(child, ref, idMap, options);
+function morphChildNode(child: ChildNode, ref: ReadonlyNode<ChildNode>, parent: Element, context: Context): void {
+	if (isElement(child) && isElement(ref)) morphChildElement(child, ref, parent, context);
+	else morphNode(child, ref, context);
 }
 
-function morphChildElement(child: Element, ref: ReadonlyNode<Element>, parent: Element, idMap: IdMap, options: Options): void {
-	const refIdSet = idMap.get(ref);
+function morphChildElement(child: Element, ref: ReadonlyNode<Element>, parent: Element, context: Context): void {
+	const refIdSet = context.idMap.get(ref);
 
 	// Generate the array in advance of the loop
 	const refSetArray = refIdSet ? [...refIdSet] : [];
@@ -194,14 +198,14 @@ function morphChildElement(child: Element, ref: ReadonlyNode<Element>, parent: E
 		if (isElement(currentNode)) {
 			if (currentNode.id === ref.id) {
 				parent.insertBefore(currentNode, child);
-				return morphNode(currentNode, ref, idMap, options);
+				return morphNode(currentNode, ref, context);
 			} else {
 				if (currentNode.id !== "") {
-					const currentIdSet = idMap.get(currentNode);
+					const currentIdSet = context.idMap.get(currentNode);
 
 					if (currentIdSet && refSetArray.some((it) => currentIdSet.has(it))) {
 						parent.insertBefore(currentNode, child);
-						return morphNode(currentNode, ref, idMap, options);
+						return morphNode(currentNode, ref, context);
 					} else if (!nextMatchByTagName && currentNode.tagName === ref.tagName) {
 						nextMatchByTagName = currentNode;
 					}
@@ -214,22 +218,22 @@ function morphChildElement(child: Element, ref: ReadonlyNode<Element>, parent: E
 
 	if (nextMatchByTagName) {
 		if (nextMatchByTagName !== child) parent.insertBefore(nextMatchByTagName, child);
-		morphNode(nextMatchByTagName, ref, idMap, options);
-	} else replaceNode(child, ref.cloneNode(true), options);
+		morphNode(nextMatchByTagName, ref, context);
+	} else replaceNode(child, ref.cloneNode(true), context);
 }
 
-function replaceNode(node: ChildNode, newNode: Node, options: Options): void {
-	if ((options.beforeNodeRemoved?.(node) ?? true) && (options.beforeNodeAdded?.(newNode, node.parentNode) ?? true)) {
+function replaceNode(node: ChildNode, newNode: Node, context: Context): void {
+	if ((context.beforeNodeRemoved?.(node) ?? true) && (context.beforeNodeAdded?.(newNode, node.parentNode) ?? true)) {
 		node.replaceWith(newNode);
-		options.afterNodeAdded?.(newNode);
-		options.afterNodeRemoved?.(node);
+		context.afterNodeAdded?.(newNode);
+		context.afterNodeRemoved?.(node);
 	}
 }
 
-function appendChild(node: ParentNode, newNode: Node, options: Options): void {
-	if (options.beforeNodeAdded?.(newNode, node) ?? true) {
+function appendChild(node: ParentNode, newNode: Node, context: Context): void {
+	if (context.beforeNodeAdded?.(newNode, node) ?? true) {
 		node.appendChild(newNode);
-		options.afterNodeAdded?.(newNode);
+		context.afterNodeAdded?.(newNode);
 	}
 }
 
