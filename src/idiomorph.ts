@@ -1,14 +1,10 @@
 import { morph, Options } from "./morphlex";
 
-type MorphStyle = "innerHTML" | "outerHTML";
-type AttributeMutationType = "updated" | "removed";
-type HeadMode = "merge" | "morph" | "merge" | "append";
-
 interface IdiomorphOptions {
-	morphStyle?: MorphStyle;
+	head?: "merge" | "morph" | "merge" | "append";
+	morphStyle?: "innerHTML" | "outerHTML";
 	ignoreActive?: boolean;
 	ignoreActiveValue?: boolean;
-	head?: HeadMode;
 	callbacks?: {
 		beforeNodeAdded?: (node: Node) => boolean;
 		afterNodeAdded?: (node: Node) => void;
@@ -16,7 +12,7 @@ interface IdiomorphOptions {
 		afterNodeMorphed?: (oldNode: Node, newNode: Node) => void;
 		beforeNodeRemoved?: (node: Node) => boolean;
 		afterNodeRemoved?: (node: Node) => void;
-		beforeAttributeUpdated?: (attributeName: string, node: Node, mutationType: AttributeMutationType) => boolean;
+		beforeAttributeUpdated?: (attributeName: string, node: Node, mutationType: "updated" | "removed") => boolean;
 	};
 }
 
@@ -24,6 +20,12 @@ export class Idiomorph {
 	private node: ChildNode;
 	private referenceNode: ChildNode;
 	private idiomorphOptions: IdiomorphOptions;
+	public static defaults: IdiomorphOptions = {
+		head: "merge",
+		morphStyle: "innerHTML",
+		ignoreActive: false,
+		ignoreActiveValue: false,
+	};
 
 	static morph(node: ChildNode, referenceNode: ChildNode, options: IdiomorphOptions = {}) {
 		const idiomorph = new Idiomorph(node, referenceNode, options);
@@ -38,8 +40,7 @@ export class Idiomorph {
 
 	morph() {
 		if (this.idiomorphOptions.morphStyle === "outerHTML") {
-			// TODO: Need to implement outerHTML morphing via NodeListOf<ChildNode>
-			// morph(this.node, this.referenceNode.childNodes, this.morphlexOptions);
+			throw new Error("outerHTML morphing is not yet implemented");
 		} else {
 			morph(this.node, this.referenceNode, this.morphlexOptions);
 		}
@@ -52,6 +53,7 @@ export class Idiomorph {
 			afterNodeAdded: this.afterNodeAdded,
 			beforeNodeMorphed: this.beforeNodeMorphed,
 			afterNodeMorphed: this.afterNodeMorphed,
+			beforeAttributeUpdated: this.beforeAttributeUpdated,
 		};
 	}
 
@@ -86,6 +88,16 @@ export class Idiomorph {
 		if (this.idiomorphOptions.callbacks?.afterNodeMorphed)
 			return ({ node, referenceNode }: { node: Node; referenceNode: Node }) => {
 				this.idiomorphOptions.callbacks?.afterNodeMorphed?.(node, referenceNode);
+			};
+	}
+
+	private get beforeAttributeUpdated(): Options["beforeAttributeUpdated"] {
+		if (this.idiomorphOptions.callbacks?.beforeAttributeUpdated)
+			return ({ element, attributeName, newValue }: { element: Element; attributeName: string; newValue: string | null }) => {
+				return (
+					this.idiomorphOptions.callbacks?.beforeAttributeUpdated?.(attributeName, element, newValue ? "updated" : "removed") ??
+					true
+				);
 			};
 	}
 }
