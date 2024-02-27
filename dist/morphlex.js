@@ -25,8 +25,7 @@ function populateIdSets(node, idMap) {
 }
 // This is where we actually morph the nodes. The `morph` function (above) exists only to set up the `idMap`.
 function morphNode(node, ref, context) {
-	const writableRef = ref;
-	if (!(context.beforeNodeMorphed?.(node, writableRef) ?? true)) return;
+	if (!(context.beforeNodeMorphed?.({ node, referenceNode: ref }) ?? true)) return;
 	if (isElement(node) && isElement(ref) && node.tagName === ref.tagName) {
 		if (node.hasAttributes() || ref.hasAttributes()) morphAttributes(node, ref, context);
 		if (isHead(node) && isHead(ref)) {
@@ -46,17 +45,25 @@ function morphNode(node, ref, context) {
 			updateProperty(node, "nodeValue", ref.nodeValue, context);
 		} else replaceNode(node, ref.cloneNode(true), context);
 	}
-	context.afterNodeMorphed?.(node);
+	context.afterNodeMorphed?.({ node });
 }
 function morphAttributes(element, ref, context) {
 	// Remove any excess attributes from the element that aren’t present in the reference.
-	for (const { name } of element.attributes) ref.hasAttribute(name) || element.removeAttribute(name);
+	for (const { name, value } of element.attributes) {
+		if (!ref.hasAttribute(name) && (context.beforeAttributeUpdated?.({ element, attributeName: name, newValue: null }) ?? true)) {
+			element.removeAttribute(name);
+			context.afterAttributeUpdated?.({ element, attributeName: name, previousValue: value });
+		}
+	}
 	// Copy attributes from the reference to the element, if they don’t already match.
 	for (const { name, value } of ref.attributes) {
 		const previousValue = element.getAttribute(name);
-		if (previousValue !== value && (context.beforeAttributeUpdated?.(name, value, element) ?? true)) {
+		if (
+			previousValue !== value &&
+			(context.beforeAttributeUpdated?.({ element, attributeName: name, newValue: value }) ?? true)
+		) {
 			element.setAttribute(name, value);
-			context.afterAttributeUpdated?.(name, previousValue, element);
+			context.afterAttributeUpdated?.({ element, attributeName: name, previousValue });
 		}
 	}
 	// For certain types of elements, we need to do some extra work to ensure
@@ -98,11 +105,11 @@ function morphChildNodes(element, ref, context) {
 		if (child) removeNode(child, context);
 	}
 }
-function updateProperty(element, propertyName, newValue, context) {
-	const previousValue = element[propertyName];
-	if (previousValue !== newValue && (context.beforePropertyUpdated?.(propertyName, newValue, element) ?? true)) {
-		element[propertyName] = newValue;
-		context.afterPropertyUpdated?.(propertyName, previousValue, element);
+function updateProperty(node, propertyName, newValue, context) {
+	const previousValue = node[propertyName];
+	if (previousValue !== newValue && (context.beforePropertyUpdated?.({ node, propertyName, newValue }) ?? true)) {
+		node[propertyName] = newValue;
+		context.afterPropertyUpdated?.({ node, propertyName, previousValue });
 	}
 }
 function morphChildNode(child, ref, parent, context) {
@@ -141,22 +148,25 @@ function morphChildElement(child, ref, parent, context) {
 	} else replaceNode(child, ref.cloneNode(true), context);
 }
 function replaceNode(node, newNode, context) {
-	if ((context.beforeNodeRemoved?.(node) ?? true) && (context.beforeNodeAdded?.(newNode, node.parentNode) ?? true)) {
+	if (
+		(context.beforeNodeRemoved?.({ oldNode: node }) ?? true) &&
+		(context.beforeNodeAdded?.({ newNode, parentNode: node.parentNode }) ?? true)
+	) {
 		node.replaceWith(newNode);
-		context.afterNodeAdded?.(newNode);
-		context.afterNodeRemoved?.(node);
+		context.afterNodeAdded?.({ newNode });
+		context.afterNodeRemoved?.({ oldNode: node });
 	}
 }
 function appendChild(node, newNode, context) {
-	if (context.beforeNodeAdded?.(newNode, node) ?? true) {
+	if (context.beforeNodeAdded?.({ newNode, parentNode: node }) ?? true) {
 		node.appendChild(newNode);
-		context.afterNodeAdded?.(newNode);
+		context.afterNodeAdded?.({ newNode });
 	}
 }
 function removeNode(node, context) {
-	if (context.beforeNodeRemoved?.(node) ?? true) {
+	if (context.beforeNodeRemoved?.({ oldNode: node }) ?? true) {
 		node.remove();
-		context.afterNodeRemoved?.(node);
+		context.afterNodeRemoved?.({ oldNode: node });
 	}
 }
 function isText(node) {

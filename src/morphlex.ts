@@ -28,24 +28,58 @@ type ReadonlyNodeList<T extends Node> =
 			readonly length: NodeListOf<T>["length"];
 	  };
 
-interface Options {
+export interface Options {
 	ignoreActiveValue?: boolean;
 	preserveModifiedValues?: boolean;
 
-	beforeNodeMorphed?: (node: Node, referenceNode: Node) => boolean;
-	afterNodeMorphed?: (node: Node) => void;
+	beforeNodeMorphed?: ({ node, referenceNode }: { node: Node; referenceNode: Node }) => boolean;
+	afterNodeMorphed?: ({ node }: { node: Node }) => void;
 
-	beforeNodeAdded?: (newNode: Node, parentNode: ParentNode | null) => boolean;
-	afterNodeAdded?: (newNode: Node) => void;
+	beforeNodeAdded?: ({ newNode, parentNode }: { newNode: Node; parentNode: ParentNode | null }) => boolean;
+	afterNodeAdded?: ({ newNode }: { newNode: Node }) => void;
 
-	beforeNodeRemoved?: (oldNode: Node) => boolean;
-	afterNodeRemoved?: (oldNode: Node) => void;
+	beforeNodeRemoved?: ({ oldNode }: { oldNode: Node }) => boolean;
+	afterNodeRemoved?: ({ oldNode }: { oldNode: Node }) => void;
 
-	beforeAttributeUpdated?: (attributeName: string, newValue: string, element: Element) => boolean;
-	afterAttributeUpdated?: (attributeName: string, previousValue: string | null, element: Element) => void;
+	beforeAttributeUpdated?: ({
+		element,
+		attributeName,
+		newValue,
+	}: {
+		element: Element;
+		attributeName: string;
+		newValue: string | null;
+	}) => boolean;
 
-	beforePropertyUpdated?: (propertyName: ObjectKey, newValue: unknown, node: Node) => boolean;
-	afterPropertyUpdated?: (propertyName: ObjectKey, previousValue: unknown, node: Node) => void;
+	afterAttributeUpdated?: ({
+		element,
+		attributeName,
+		previousValue,
+	}: {
+		element: Element;
+		attributeName: string;
+		previousValue: string | null;
+	}) => void;
+
+	beforePropertyUpdated?: ({
+		node,
+		propertyName,
+		newValue,
+	}: {
+		node: Node;
+		propertyName: ObjectKey;
+		newValue: unknown;
+	}) => boolean;
+
+	afterPropertyUpdated?: ({
+		node,
+		propertyName,
+		previousValue,
+	}: {
+		node: Node;
+		propertyName: ObjectKey;
+		previousValue: unknown;
+	}) => void;
 }
 
 type Context = Options & { idMap: IdMap };
@@ -85,8 +119,7 @@ function populateIdSets(node: ReadonlyNode<ParentNode>, idMap: IdMap): void {
 
 // This is where we actually morph the nodes. The `morph` function (above) exists only to set up the `idMap`.
 function morphNode(node: ChildNode, ref: ReadonlyNode<ChildNode>, context: Context): void {
-	const writableRef = ref as ChildNode;
-	if (!(context.beforeNodeMorphed?.(node, writableRef) ?? true)) return;
+	if (!(context.beforeNodeMorphed?.({ node, referenceNode: ref as ChildNode }) ?? true)) return;
 
 	if (isElement(node) && isElement(ref) && node.tagName === ref.tagName) {
 		if (node.hasAttributes() || ref.hasAttributes()) morphAttributes(node, ref, context);
@@ -108,19 +141,27 @@ function morphNode(node: ChildNode, ref: ReadonlyNode<ChildNode>, context: Conte
 		} else replaceNode(node, ref.cloneNode(true), context);
 	}
 
-	context.afterNodeMorphed?.(node);
+	context.afterNodeMorphed?.({ node });
 }
 
 function morphAttributes(element: Element, ref: ReadonlyNode<Element>, context: Context): void {
 	// Remove any excess attributes from the element that aren’t present in the reference.
-	for (const { name } of element.attributes) ref.hasAttribute(name) || element.removeAttribute(name);
+	for (const { name, value } of element.attributes) {
+		if (!ref.hasAttribute(name) && (context.beforeAttributeUpdated?.({ element, attributeName: name, newValue: null }) ?? true)) {
+			element.removeAttribute(name);
+			context.afterAttributeUpdated?.({ element, attributeName: name, previousValue: value });
+		}
+	}
 
 	// Copy attributes from the reference to the element, if they don’t already match.
 	for (const { name, value } of ref.attributes) {
 		const previousValue = element.getAttribute(name);
-		if (previousValue !== value && (context.beforeAttributeUpdated?.(name, value, element) ?? true)) {
+		if (
+			previousValue !== value &&
+			(context.beforeAttributeUpdated?.({ element, attributeName: name, newValue: value }) ?? true)
+		) {
 			element.setAttribute(name, value);
-			context.afterAttributeUpdated?.(name, previousValue, element);
+			context.afterAttributeUpdated?.({ element, attributeName: name, previousValue });
 		}
 	}
 
@@ -169,11 +210,11 @@ function morphChildNodes(element: Element, ref: ReadonlyNode<Element>, context: 
 	}
 }
 
-function updateProperty<N extends Node, P extends keyof N>(element: N, propertyName: P, newValue: N[P], context: Context): void {
-	const previousValue = element[propertyName];
-	if (previousValue !== newValue && (context.beforePropertyUpdated?.(propertyName, newValue, element) ?? true)) {
-		element[propertyName] = newValue;
-		context.afterPropertyUpdated?.(propertyName, previousValue, element);
+function updateProperty<N extends Node, P extends keyof N>(node: N, propertyName: P, newValue: N[P], context: Context): void {
+	const previousValue = node[propertyName];
+	if (previousValue !== newValue && (context.beforePropertyUpdated?.({ node, propertyName, newValue }) ?? true)) {
+		node[propertyName] = newValue;
+		context.afterPropertyUpdated?.({ node, propertyName, previousValue });
 	}
 }
 
@@ -221,24 +262,27 @@ function morphChildElement(child: Element, ref: ReadonlyNode<Element>, parent: E
 }
 
 function replaceNode(node: ChildNode, newNode: Node, context: Context): void {
-	if ((context.beforeNodeRemoved?.(node) ?? true) && (context.beforeNodeAdded?.(newNode, node.parentNode) ?? true)) {
+	if (
+		(context.beforeNodeRemoved?.({ oldNode: node }) ?? true) &&
+		(context.beforeNodeAdded?.({ newNode, parentNode: node.parentNode }) ?? true)
+	) {
 		node.replaceWith(newNode);
-		context.afterNodeAdded?.(newNode);
-		context.afterNodeRemoved?.(node);
+		context.afterNodeAdded?.({ newNode });
+		context.afterNodeRemoved?.({ oldNode: node });
 	}
 }
 
 function appendChild(node: ParentNode, newNode: Node, context: Context): void {
-	if (context.beforeNodeAdded?.(newNode, node) ?? true) {
+	if (context.beforeNodeAdded?.({ newNode, parentNode: node }) ?? true) {
 		node.appendChild(newNode);
-		context.afterNodeAdded?.(newNode);
+		context.afterNodeAdded?.({ newNode });
 	}
 }
 
 function removeNode(node: ChildNode, context: Context): void {
-	if (context.beforeNodeRemoved?.(node) ?? true) {
+	if (context.beforeNodeRemoved?.({ oldNode: node }) ?? true) {
 		node.remove();
-		context.afterNodeRemoved?.(node);
+		context.afterNodeRemoved?.({ oldNode: node });
 	}
 }
 
