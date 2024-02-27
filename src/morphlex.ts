@@ -236,14 +236,14 @@ function morphChildElement(child: Element, ref: ReadonlyNode<Element>, parent: E
 	while (currentNode) {
 		if (isElement(currentNode)) {
 			if (currentNode.id === ref.id) {
-				parent.insertBefore(currentNode, child);
+				insertBefore(parent, currentNode, child);
 				return morphNode(currentNode, ref, context);
 			} else {
 				if (currentNode.id !== "") {
 					const currentIdSet = context.idMap.get(currentNode);
 
 					if (currentIdSet && refSetArray.some((it) => currentIdSet.has(it))) {
-						parent.insertBefore(currentNode, child);
+						insertBefore(parent, currentNode, child);
 						return morphNode(currentNode, ref, context);
 					} else if (!nextMatchByTagName && currentNode.tagName === ref.tagName) {
 						nextMatchByTagName = currentNode;
@@ -256,7 +256,7 @@ function morphChildElement(child: Element, ref: ReadonlyNode<Element>, parent: E
 	}
 
 	if (nextMatchByTagName) {
-		if (nextMatchByTagName !== child) parent.insertBefore(nextMatchByTagName, child);
+		insertBefore(parent, nextMatchByTagName, child);
 		morphNode(nextMatchByTagName, ref, context);
 	} else replaceNode(child, ref.cloneNode(true), context);
 }
@@ -270,6 +270,10 @@ function replaceNode(node: ChildNode, newNode: Node, context: Context): void {
 		context.afterNodeAdded?.({ newNode });
 		context.afterNodeRemoved?.({ oldNode: node });
 	}
+}
+
+function insertBefore(parent: ParentNode, node: ChildNode, before: ChildNode): void {
+	if (node !== before) parent.insertBefore(node, before);
 }
 
 function appendChild(node: ParentNode, newNode: Node, context: Context): void {
