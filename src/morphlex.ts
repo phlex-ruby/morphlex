@@ -1,36 +1,57 @@
 type IdSet = Set<string>;
-type IdMap = WeakMap<ReadOnlyNode<Node>, IdSet>;
+type IdMap = WeakMap<ReadonlyNode<Node>, IdSet>;
+type ObjectKey = string | number | symbol;
 
 // Maps to a type that can only read properties
-type StrongReadOnly<T> = {
-	readonly [K in keyof T as T[K] extends Function ? never : K]: T[K];
-};
+type StrongReadonly<T> = { readonly [K in keyof T as T[K] extends Function ? never : K]: T[K] };
 
 // Maps a Node to a type limited to read-only properties and methods for that Node
-type ReadOnlyNode<T extends Node> =
+type ReadonlyNode<T extends Node> =
 	| T
-	| (StrongReadOnly<T> & {
+	| (StrongReadonly<T> & {
 			readonly cloneNode: (deep: true) => Node;
-			readonly childNodes: ReadOnlyNodeList<ChildNode>;
-			readonly querySelectorAll: (query: string) => ReadOnlyNodeList<Element>;
-			readonly parentElement: ReadOnlyNode<Element> | null;
+			readonly childNodes: ReadonlyNodeList<ChildNode>;
+			readonly querySelectorAll: (query: string) => ReadonlyNodeList<Element>;
+			readonly parentElement: ReadonlyNode<Element> | null;
 			readonly hasAttribute: (name: string) => boolean;
 			readonly hasAttributes: () => boolean;
 			readonly hasChildNodes: () => boolean;
-			readonly children: ReadOnlyNodeList<Element>;
+			readonly children: ReadonlyNodeList<Element>;
 	  });
 
 // Maps a node to a read-only node list of nodes of that type
-type ReadOnlyNodeList<T extends Node> =
+type ReadonlyNodeList<T extends Node> =
 	| NodeListOf<T>
 	| {
-			[Symbol.iterator](): IterableIterator<ReadOnlyNode<T>>;
-			readonly [index: number]: ReadOnlyNode<T>;
+			[Symbol.iterator](): IterableIterator<ReadonlyNode<T>>;
+			readonly [index: number]: ReadonlyNode<T>;
 			readonly length: NodeListOf<T>["length"];
 	  };
 
-export function morph(node: ChildNode, reference: ChildNode): void {
-	const readonlyReference = reference as ReadOnlyNode<ChildNode>;
+interface Options {
+	ignoreActiveValue?: boolean;
+	preserveModifiedValues?: boolean;
+
+	beforeNodeMorphed?: (node: Node, referenceNode: Node) => boolean;
+	afterNodeMorphed?: (node: Node) => void;
+
+	beforeNodeAdded?: (newNode: Node, parentNode: ParentNode | null) => boolean;
+	afterNodeAdded?: (newNode: Node) => void;
+
+	beforeNodeRemoved?: (oldNode: Node) => boolean;
+	afterNodeRemoved?: (oldNode: Node) => void;
+
+	beforeAttributeUpdated?: (attributeName: string, newValue: string, element: Element) => boolean;
+	afterAttributeUpdated?: (attributeName: string, previousValue: string | null, element: Element) => void;
+
+	beforePropertyUpdated?: (propertyName: ObjectKey, newValue: unknown, node: Node) => boolean;
+	afterPropertyUpdated?: (propertyName: ObjectKey, previousValue: unknown, node: Node) => void;
+}
+
+type Context = Options & { idMap: IdMap };
+
+export function morph(node: ChildNode, reference: ChildNode, options: Options = {}): void {
+	const readonlyReference = reference as ReadonlyNode<ChildNode>;
 	const idMap: IdMap = new WeakMap();
 
 	if (isParentNode(node) && isParentNode(readonlyReference)) {
@@ -38,11 +59,11 @@ export function morph(node: ChildNode, reference: ChildNode): void {
 		populateIdSets(readonlyReference, idMap);
 	}
 
-	morphNodes(node, readonlyReference, idMap);
+	morphNode(node, readonlyReference, { ...options, idMap });
 }
 
 // For each node with an ID, push that ID into the IdSet on the IdMap, for each of its parent elements.
-function populateIdSets(node: ReadOnlyNode<ParentNode>, idMap: IdMap): void {
+function populateIdSets(node: ReadonlyNode<ParentNode>, idMap: IdMap): void {
 	const elementsWithIds = node.querySelectorAll("[id]");
 
 	for (const elementWithId of elementsWithIds) {
@@ -51,7 +72,7 @@ function populateIdSets(node: ReadOnlyNode<ParentNode>, idMap: IdMap): void {
 		// Ignore empty IDs
 		if (id === "") continue;
 
-		let current: ReadOnlyNode<Element> | null = elementWithId;
+		let current: ReadonlyNode<Element> | null = elementWithId;
 
 		while (current) {
 			const idSet: IdSet | undefined = idMap.get(current);
@@ -63,53 +84,70 @@ function populateIdSets(node: ReadOnlyNode<ParentNode>, idMap: IdMap): void {
 }
 
 // This is where we actually morph the nodes. The `morph` function exists to set up the `idMap`.
-function morphNodes(node: ChildNode, ref: ReadOnlyNode<ChildNode>, idMap: IdMap): void {
+function morphNode(node: ChildNode, ref: ReadonlyNode<ChildNode>, context: Context): void {
+	const writableRef = ref as ChildNode;
+	if (!(context.beforeNodeMorphed?.(node, writableRef) ?? true)) return;
+
 	if (isElement(node) && isElement(ref) && node.tagName === ref.tagName) {
-		if (node.hasAttributes() || ref.hasAttributes()) morphAttributes(node, ref);
+		if (node.hasAttributes() || ref.hasAttributes()) morphAttributes(node, ref, context);
 		if (isHead(node) && isHead(ref)) {
-			const refChildNodes: Map<string, ReadOnlyNode<Element>> = new Map();
+			const refChildNodes: Map<string, ReadonlyNode<Element>> = new Map();
 			for (const child of ref.children) refChildNodes.set(child.outerHTML, child);
 			for (const child of node.children) {
 				const key = child.outerHTML;
 				const refChild = refChildNodes.get(key);
-				refChild ? refChildNodes.delete(key) : child.remove();
+				refChild ? refChildNodes.delete(key) : child.remove(); // TODO add callback
 			}
-			for (const refChild of refChildNodes.values()) node.appendChild(refChild.cloneNode(true));
-		} else if (node.hasChildNodes() || ref.hasChildNodes()) morphChildNodes(node, ref, idMap);
+			for (const refChild of refChildNodes.values()) appendChild(node, refChild.cloneNode(true), context);
+		} else if (node.hasChildNodes() || ref.hasChildNodes()) morphChildNodes(node, ref, context);
 	} else {
 		if (isText(node) && isText(ref)) {
-			if (node.textContent !== ref.textContent) node.textContent = ref.textContent;
+			updateProperty(node, "textContent", ref.textContent, context);
 		} else if (isComment(node) && isComment(ref)) {
-			if (node.nodeValue !== ref.nodeValue) node.nodeValue = ref.nodeValue;
-		} else node.replaceWith(ref.cloneNode(true));
+			updateProperty(node, "nodeValue", ref.nodeValue, context);
+		} else replaceNode(node, ref.cloneNode(true), context);
 	}
+
+	context.afterNodeMorphed?.(node);
 }
 
-function morphAttributes(elm: Element, ref: ReadOnlyNode<Element>): void {
+function morphAttributes(element: Element, ref: ReadonlyNode<Element>, context: Context): void {
 	// Remove any excess attributes from the element that aren’t present in the reference.
-	for (const { name } of elm.attributes) ref.hasAttribute(name) || elm.removeAttribute(name);
+	for (const { name } of element.attributes) ref.hasAttribute(name) || element.removeAttribute(name);
 
 	// Copy attributes from the reference to the element, if they don’t already match.
-	for (const { name, value } of ref.attributes) elm.getAttribute(name) === value || elm.setAttribute(name, value);
+	for (const { name, value } of ref.attributes) {
+		const previousValue = element.getAttribute(name);
+		if (previousValue !== value && (context.beforeAttributeUpdated?.(name, value, element) ?? true)) {
+			element.setAttribute(name, value);
+			context.afterAttributeUpdated?.(name, previousValue, element);
+		}
+	}
 
 	// For certain types of elements, we need to do some extra work to ensure
 	// the element’s state matches the reference elements’ state.
-	if (isInput(elm) && isInput(ref)) {
-		if (elm.checked !== ref.checked) elm.checked = ref.checked;
-		if (elm.disabled !== ref.disabled) elm.disabled = ref.disabled;
-		if (elm.indeterminate !== ref.indeterminate) elm.indeterminate = ref.indeterminate;
-		if (elm.type !== "file" && elm.value !== ref.value) elm.value = ref.value;
-	} else if (isOption(elm) && isOption(ref) && elm.selected !== ref.selected) elm.selected = ref.selected;
-	else if (isTextArea(elm) && isTextArea(ref)) {
-		if (elm.value !== ref.value) elm.value = ref.value;
+	if (isInput(element) && isInput(ref)) {
+		updateProperty(element, "checked", ref.checked, context);
+		updateProperty(element, "disabled", ref.disabled, context);
+		updateProperty(element, "indeterminate", ref.indeterminate, context);
+		if (
+			element.type !== "file" &&
+			!(context.ignoreActiveValue && document.activeElement === element) &&
+			!(context.preserveModifiedValues && element.value !== element.defaultValue)
+		)
+			updateProperty(element, "value", ref.value, context);
+	} else if (isOption(element) && isOption(ref)) updateProperty(element, "selected", ref.selected, context);
+	else if (isTextArea(element) && isTextArea(ref)) {
+		updateProperty(element, "value", ref.value, context);
 
-		const text = elm.firstChild;
-		if (text && isText(text) && text.textContent !== ref.value) text.textContent = ref.value;
+		// TODO: Do we need this? If so, how do we integrate with the callback?
+		const text = element.firstChild;
+		if (text && isText(text)) updateProperty(text, "textContent", ref.value, context);
 	}
 }
 
 // Iterates over the child nodes of the reference element, morphing the main element’s child nodes to match.
-function morphChildNodes(element: Element, ref: ReadOnlyNode<Element>, idMap: IdMap): void {
+function morphChildNodes(element: Element, ref: ReadonlyNode<Element>, context: Context): void {
 	const childNodes = [...element.childNodes];
 	const refChildNodes = [...ref.childNodes];
 
@@ -117,9 +155,13 @@ function morphChildNodes(element: Element, ref: ReadOnlyNode<Element>, idMap: Id
 		const child = childNodes.at(i);
 		const refChild = refChildNodes.at(i);
 
-		if (child && refChild) morphChildNode(child, refChild, element, idMap);
-		else if (refChild) element.appendChild(refChild.cloneNode(true));
-		else if (child) child.remove();
+		if (child && refChild) morphChildNode(child, refChild, element, context);
+		else if (refChild) {
+			appendChild(element, refChild.cloneNode(true), context);
+		} else if (child && (context.beforeNodeRemoved?.(child) ?? true)) {
+			child.remove();
+			context.afterNodeRemoved?.(child);
+		}
 	}
 
 	// Remove any excess child nodes from the main element. This is separate because
@@ -127,13 +169,21 @@ function morphChildNodes(element: Element, ref: ReadOnlyNode<Element>, idMap: Id
 	while (element.childNodes.length > ref.childNodes.length) element.lastChild?.remove();
 }
 
-function morphChildNode(child: ChildNode, ref: ReadOnlyNode<ChildNode>, parent: Element, idMap: IdMap): void {
-	if (isElement(child) && isElement(ref)) morphChildElement(child, ref, parent, idMap);
-	else morphNodes(child, ref, idMap);
+function updateProperty<N extends Node, P extends keyof N>(element: N, propertyName: P, newValue: N[P], context: Context): void {
+	const previousValue = element[propertyName];
+	if (previousValue !== newValue && (context.beforePropertyUpdated?.(propertyName, newValue, element) ?? true)) {
+		element[propertyName] = newValue;
+		context.afterPropertyUpdated?.(propertyName, previousValue, element);
+	}
 }
 
-function morphChildElement(child: Element, ref: ReadOnlyNode<Element>, parent: Element, idMap: IdMap): void {
-	const refIdSet = idMap.get(ref);
+function morphChildNode(child: ChildNode, ref: ReadonlyNode<ChildNode>, parent: Element, context: Context): void {
+	if (isElement(child) && isElement(ref)) morphChildElement(child, ref, parent, context);
+	else morphNode(child, ref, context);
+}
+
+function morphChildElement(child: Element, ref: ReadonlyNode<Element>, parent: Element, context: Context): void {
+	const refIdSet = context.idMap.get(ref);
 
 	// Generate the array in advance of the loop
 	const refSetArray = refIdSet ? [...refIdSet] : [];
@@ -146,14 +196,14 @@ function morphChildElement(child: Element, ref: ReadOnlyNode<Element>, parent: E
 		if (isElement(currentNode)) {
 			if (currentNode.id === ref.id) {
 				parent.insertBefore(currentNode, child);
-				return morphNodes(currentNode, ref, idMap);
+				return morphNode(currentNode, ref, context);
 			} else {
 				if (currentNode.id !== "") {
-					const currentIdSet = idMap.get(currentNode);
+					const currentIdSet = context.idMap.get(currentNode);
 
 					if (currentIdSet && refSetArray.some((it) => currentIdSet.has(it))) {
 						parent.insertBefore(currentNode, child);
-						return morphNodes(currentNode, ref, idMap);
+						return morphNode(currentNode, ref, context);
 					} else if (!nextMatchByTagName && currentNode.tagName === ref.tagName) {
 						nextMatchByTagName = currentNode;
 					}
@@ -166,8 +216,23 @@ function morphChildElement(child: Element, ref: ReadOnlyNode<Element>, parent: E
 
 	if (nextMatchByTagName) {
 		if (nextMatchByTagName !== child) parent.insertBefore(nextMatchByTagName, child);
-		morphNodes(nextMatchByTagName, ref, idMap);
-	} else child.replaceWith(ref.cloneNode(true));
+		morphNode(nextMatchByTagName, ref, context);
+	} else replaceNode(child, ref.cloneNode(true), context);
+}
+
+function replaceNode(node: ChildNode, newNode: Node, context: Context): void {
+	if ((context.beforeNodeRemoved?.(node) ?? true) && (context.beforeNodeAdded?.(newNode, node.parentNode) ?? true)) {
+		node.replaceWith(newNode);
+		context.afterNodeAdded?.(newNode);
+		context.afterNodeRemoved?.(node);
+	}
+}
+
+function appendChild(node: ParentNode, newNode: Node, context: Context): void {
+	if (context.beforeNodeAdded?.(newNode, node) ?? true) {
+		node.appendChild(newNode);
+		context.afterNodeAdded?.(newNode);
+	}
 }
 
 // We cannot use `instanceof` when nodes might be from different documents,
@@ -175,49 +240,49 @@ function morphChildElement(child: Element, ref: ReadOnlyNode<Element>, parent: E
 // the necessary checks at runtime.
 
 function isText(node: Node): node is Text;
-function isText(node: ReadOnlyNode<Node>): node is ReadOnlyNode<Text>;
-function isText(node: Node | ReadOnlyNode<Node>): boolean {
+function isText(node: ReadonlyNode<Node>): node is ReadonlyNode<Text>;
+function isText(node: Node | ReadonlyNode<Node>): boolean {
 	return node.nodeType === 3;
 }
 
 function isComment(node: Node): node is Comment;
-function isComment(node: ReadOnlyNode<Node>): node is ReadOnlyNode<Comment>;
-function isComment(node: Node | ReadOnlyNode<Node>): boolean {
+function isComment(node: ReadonlyNode<Node>): node is ReadonlyNode<Comment>;
+function isComment(node: Node | ReadonlyNode<Node>): boolean {
 	return node.nodeType === 8;
 }
 
 function isElement(node: Node): node is Element;
-function isElement(node: ReadOnlyNode<Node>): node is ReadOnlyNode<Element>;
-function isElement(node: Node | ReadOnlyNode<Node>): boolean {
+function isElement(node: ReadonlyNode<Node>): node is ReadonlyNode<Element>;
+function isElement(node: Node | ReadonlyNode<Node>): boolean {
 	return node.nodeType === 1;
 }
 
 function isInput(element: Element): element is HTMLInputElement;
-function isInput(element: ReadOnlyNode<Element>): element is ReadOnlyNode<HTMLInputElement>;
-function isInput(element: Element | ReadOnlyNode<Element>): boolean {
+function isInput(element: ReadonlyNode<Element>): element is ReadonlyNode<HTMLInputElement>;
+function isInput(element: Element | ReadonlyNode<Element>): boolean {
 	return element.localName === "input";
 }
 
 function isOption(element: Element): element is HTMLOptionElement;
-function isOption(element: ReadOnlyNode<Element>): element is ReadOnlyNode<HTMLOptionElement>;
-function isOption(element: Element | ReadOnlyNode<Element>): boolean {
+function isOption(element: ReadonlyNode<Element>): element is ReadonlyNode<HTMLOptionElement>;
+function isOption(element: Element | ReadonlyNode<Element>): boolean {
 	return element.localName === "option";
 }
 
 function isTextArea(element: Element): element is HTMLTextAreaElement;
-function isTextArea(element: ReadOnlyNode<Element>): element is ReadOnlyNode<HTMLTextAreaElement>;
-function isTextArea(element: Element | ReadOnlyNode<Element>): boolean {
+function isTextArea(element: ReadonlyNode<Element>): element is ReadonlyNode<HTMLTextAreaElement>;
+function isTextArea(element: Element | ReadonlyNode<Element>): boolean {
 	return element.localName === "textarea";
 }
 
 function isHead(element: Element): element is HTMLHeadElement;
-function isHead(element: ReadOnlyNode<Element>): element is ReadOnlyNode<HTMLHeadElement>;
-function isHead(element: Element | ReadOnlyNode<Element>): boolean {
+function isHead(element: ReadonlyNode<Element>): element is ReadonlyNode<HTMLHeadElement>;
+function isHead(element: Element | ReadonlyNode<Element>): boolean {
 	return element.localName === "head";
 }
 
 function isParentNode(node: Node): node is ParentNode;
-function isParentNode(node: ReadOnlyNode<Node>): node is ReadOnlyNode<ParentNode>;
-function isParentNode(node: Node | ReadOnlyNode<Node>): boolean {
+function isParentNode(node: ReadonlyNode<Node>): node is ReadonlyNode<ParentNode>;
+function isParentNode(node: Node | ReadonlyNode<Node>): boolean {
 	return node.nodeType === 1 || node.nodeType === 9 || node.nodeType === 11;
 }
