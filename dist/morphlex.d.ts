@@ -14,7 +14,7 @@ export interface Options {
 		element,
 	}: {
 		attributeName: string;
-		newValue: string;
+		newValue: string | null;
 		element: Element;
 	}) => boolean;
 	afterAttributeUpdated?: ({

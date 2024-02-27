@@ -47,7 +47,7 @@ export interface Options {
 		element,
 	}: {
 		attributeName: string;
-		newValue: string;
+		newValue: string | null;
 		element: Element;
 	}) => boolean;
 
@@ -146,7 +146,12 @@ function morphNode(node: ChildNode, ref: ReadonlyNode<ChildNode>, context: Conte
 
 function morphAttributes(element: Element, ref: ReadonlyNode<Element>, context: Context): void {
 	// Remove any excess attributes from the element that aren’t present in the reference.
-	for (const { name } of element.attributes) ref.hasAttribute(name) || element.removeAttribute(name);
+	for (const { name, value } of element.attributes) {
+		if (!ref.hasAttribute(name) && (context.beforeAttributeUpdated?.({ attributeName: name, newValue: null, element }) ?? true)) {
+			element.removeAttribute(name);
+			context.afterAttributeUpdated?.({ attributeName: name, previousValue: value, element });
+		}
+	}
 
 	// Copy attributes from the reference to the element, if they don’t already match.
 	for (const { name, value } of ref.attributes) {
