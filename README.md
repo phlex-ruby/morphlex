@@ -1,6 +1,6 @@
 # Morphlex
 
-Morphlex is a tiny (less than 1KB minified and gzipped), optimal DOM morphing library written in TypeScript. It uses IdSets, inspired by [Idiomorph](https://github.com/bigskysoftware/idiomorph).
+Morphlex is a tiny, safe, optimal DOM morphing library written in TypeScript. It uses IdSets, inspired by [Idiomorph](https://github.com/bigskysoftware/idiomorph).
 
 ## Why are we doing this?
 
