@@ -1,8 +1,9 @@
 type MorphStyle = "innerHTML" | "outerHTML";
 type AttributeMutationType = "updated" | "removed";
-type HeadMode = "merge" | "morph";
+type HeadMode = "merge" | "morph" | "merge" | "append";
 interface Options {
 	morphStyle?: MorphStyle;
+	ignoreActive?: boolean;
 	ignoreActiveValue?: boolean;
 	head?: HeadMode;
 	callbacks?: Callbacks;
@@ -17,6 +18,13 @@ interface Callbacks {
 	beforeAttributeUpdated?: (attributeName: string, node: Node, mutationType: AttributeMutationType) => boolean;
 }
 export declare class Idiomorph {
+	private node;
+	private referenceNode;
+	private options;
 	static morph(node: ChildNode, referenceNode: ChildNode, options?: Options): void;
+	constructor(node: ChildNode, referenceNode: ChildNode, options: Options);
+	morph(): void;
+	private beforeNodeAdded;
+	private beforeNodeMorphed;
 }
 export {};

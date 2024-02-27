@@ -26,31 +26,35 @@ interface Callbacks {
 }
 
 export class Idiomorph {
+	private node: ChildNode;
+	private referenceNode: ChildNode;
+	private options: Options;
+
 	static morph(node: ChildNode, referenceNode: ChildNode, options: Options = {}) {
-		const morphlexOptions: Options = {};
-		let reference = referenceNode;
+		const idiomorph = new Idiomorph(node, referenceNode, options);
+		idiomorph.morph();
+	}
 
-		if (options.morphStyle === "innerHTML") {
-			reference = referenceNode.childNodes;
+	constructor(node: ChildNode, referenceNode: ChildNode, options: Options) {
+		this.node = node;
+		this.referenceNode = referenceNode;
+		this.options = options;
+	}
+
+	morph() {
+		if (this.options.morphStyle === "innerHTML") {
+			morph(this.node, this.referenceNode, {
+				beforeNodeAdded: this.beforeNodeAdded.bind(this),
+				beforeNodeMorphed: this.beforeNodeMorphed.bind(this),
+			});
 		}
+	}
 
-		if (options.ignoreActive) throw new Error("The Idiomorph option `ignoreActive` is not supported by Morphlex.");
-		if (options.ignoreActiveValue) morphlexOptions["ignoreActiveValue"] = options.ignoreActiveValue;
+	private beforeNodeAdded(node: Node): boolean {
+		return true;
+	}
 
-		const beforeNodeAdded = options?.callbacks?.beforeNodeAdded;
-		if (beforeNodeAdded) {
-			morphlexOptions["beforeNodeAdded"] = (node) => {
-				return beforeNodeAdded(node);
-			};
-		}
-
-		const afterNodeAdded = options?.callbacks?.afterNodeAdded;
-		if (afterNodeAdded) {
-			morphlexOptions["afterNodeAdded"] = (node) => {
-				afterNodeAdded(node);
-			};
-		}
-
-		morph(node, reference, morphlexOptions);
+	private beforeNodeMorphed(oldNode: Node, newNode: Node): boolean {
+		return true;
 	}
 }
