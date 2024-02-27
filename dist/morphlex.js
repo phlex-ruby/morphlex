@@ -79,13 +79,6 @@ function morphAttributes(element, ref, options) {
 		if (text && isText(text)) updateProperty(text, "textContent", ref.value, options);
 	}
 }
-function updateProperty(element, propertyName, newValue, options) {
-	const previousValue = element[propertyName];
-	if (previousValue !== newValue && (options.beforePropertyUpdated?.(propertyName, newValue, element) ?? true)) {
-		element[propertyName] = newValue;
-		options.afterPropertyUpdated?.(propertyName, previousValue, element);
-	}
-}
 // Iterates over the child nodes of the reference element, morphing the main element’s child nodes to match.
 function morphChildNodes(element, ref, idMap, options) {
 	const childNodes = [...element.childNodes];
@@ -104,6 +97,13 @@ function morphChildNodes(element, ref, idMap, options) {
 	// Remove any excess child nodes from the main element. This is separate because
 	// the loop above might modify the length of the main element’s child nodes.
 	while (element.childNodes.length > ref.childNodes.length) element.lastChild?.remove();
+}
+function updateProperty(element, propertyName, newValue, options) {
+	const previousValue = element[propertyName];
+	if (previousValue !== newValue && (options.beforePropertyUpdated?.(propertyName, newValue, element) ?? true)) {
+		element[propertyName] = newValue;
+		options.afterPropertyUpdated?.(propertyName, previousValue, element);
+	}
 }
 function morphChildNode(child, ref, parent, idMap, options) {
 	if (isElement(child) && isElement(ref)) morphChildElement(child, ref, parent, idMap, options);

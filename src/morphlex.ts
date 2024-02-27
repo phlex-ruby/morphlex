@@ -144,19 +144,6 @@ function morphAttributes(element: Element, ref: ReadonlyNode<Element>, options: 
 	}
 }
 
-function updateProperty<N extends Node, P extends keyof N>(
-	element: N,
-	propertyName: P,
-	newValue: N[P],
-	options: Options,
-): void {
-	const previousValue = element[propertyName];
-	if (previousValue !== newValue && (options.beforePropertyUpdated?.(propertyName, newValue, element) ?? true)) {
-		element[propertyName] = newValue;
-		options.afterPropertyUpdated?.(propertyName, previousValue, element);
-	}
-}
-
 // Iterates over the child nodes of the reference element, morphing the main element’s child nodes to match.
 function morphChildNodes(element: Element, ref: ReadonlyNode<Element>, idMap: IdMap, options: Options): void {
 	const childNodes = [...element.childNodes];
@@ -178,6 +165,19 @@ function morphChildNodes(element: Element, ref: ReadonlyNode<Element>, idMap: Id
 	// Remove any excess child nodes from the main element. This is separate because
 	// the loop above might modify the length of the main element’s child nodes.
 	while (element.childNodes.length > ref.childNodes.length) element.lastChild?.remove();
+}
+
+function updateProperty<N extends Node, P extends keyof N>(
+	element: N,
+	propertyName: P,
+	newValue: N[P],
+	options: Options,
+): void {
+	const previousValue = element[propertyName];
+	if (previousValue !== newValue && (options.beforePropertyUpdated?.(propertyName, newValue, element) ?? true)) {
+		element[propertyName] = newValue;
+		options.afterPropertyUpdated?.(propertyName, previousValue, element);
+	}
 }
 
 function morphChildNode(
