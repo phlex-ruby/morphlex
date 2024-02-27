@@ -2,10 +2,11 @@ import { morph } from "./morphlex";
 
 type MorphStyle = "innerHTML" | "outerHTML";
 type AttributeMutationType = "updated" | "removed";
-type HeadMode = "merge" | "morph";
+type HeadMode = "merge" | "morph" | "merge" | "append";
 
 interface Options {
 	morphStyle?: MorphStyle;
+	ignoreActive?: boolean;
 	ignoreActiveValue?: boolean;
 	head?: HeadMode;
 	callbacks?: Callbacks;
