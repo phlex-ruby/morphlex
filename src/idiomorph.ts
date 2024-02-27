@@ -54,6 +54,7 @@ export class Idiomorph {
 			beforeNodeMorphed: this.beforeNodeMorphed,
 			afterNodeMorphed: this.afterNodeMorphed,
 			beforeAttributeUpdated: this.beforeAttributeUpdated,
+			beforePropertyUpdated: this.beforePropertyUpdated,
 		};
 	}
 
