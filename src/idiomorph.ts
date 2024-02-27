@@ -1,60 +1,91 @@
-import { morph } from "./morphlex";
+import { morph, Options } from "./morphlex";
 
 type MorphStyle = "innerHTML" | "outerHTML";
 type AttributeMutationType = "updated" | "removed";
 type HeadMode = "merge" | "morph" | "merge" | "append";
 
-interface Options {
+interface IdiomorphOptions {
 	morphStyle?: MorphStyle;
 	ignoreActive?: boolean;
 	ignoreActiveValue?: boolean;
 	head?: HeadMode;
-	callbacks?: Callbacks;
-}
-
-interface Callbacks {
-	beforeNodeAdded?: (node: Node) => boolean;
-	afterNodeAdded?: (node: Node) => void;
-
-	beforeNodeMorphed?: (oldNode: Node, newNode: Node) => boolean;
-	afterNodeMorphed?: (oldNode: Node, newNode: Node) => void;
-
-	beforeNodeRemoved?: (node: Node) => boolean;
-	afterNodeRemoved?: (node: Node) => void;
-
-	beforeAttributeUpdated?: (attributeName: string, node: Node, mutationType: AttributeMutationType) => boolean;
+	callbacks?: {
+		beforeNodeAdded?: (node: Node) => boolean;
+		afterNodeAdded?: (node: Node) => void;
+		beforeNodeMorphed?: (oldNode: Node, newNode: Node) => boolean;
+		afterNodeMorphed?: (oldNode: Node, newNode: Node) => void;
+		beforeNodeRemoved?: (node: Node) => boolean;
+		afterNodeRemoved?: (node: Node) => void;
+		beforeAttributeUpdated?: (attributeName: string, node: Node, mutationType: AttributeMutationType) => boolean;
+	};
 }
 
 export class Idiomorph {
 	private node: ChildNode;
 	private referenceNode: ChildNode;
-	private options: Options;
+	private idiomorphOptions: IdiomorphOptions;
 
-	static morph(node: ChildNode, referenceNode: ChildNode, options: Options = {}) {
+	static morph(node: ChildNode, referenceNode: ChildNode, options: IdiomorphOptions = {}) {
 		const idiomorph = new Idiomorph(node, referenceNode, options);
 		idiomorph.morph();
 	}
 
-	constructor(node: ChildNode, referenceNode: ChildNode, options: Options) {
+	constructor(node: ChildNode, referenceNode: ChildNode, options: IdiomorphOptions) {
 		this.node = node;
 		this.referenceNode = referenceNode;
-		this.options = options;
+		this.idiomorphOptions = options;
 	}
 
 	morph() {
-		if (this.options.morphStyle === "innerHTML") {
-			morph(this.node, this.referenceNode, {
-				beforeNodeAdded: this.beforeNodeAdded.bind(this),
-				beforeNodeMorphed: this.beforeNodeMorphed.bind(this),
-			});
+		if (this.idiomorphOptions.morphStyle === "outerHTML") {
+			// TODO: Need to implement outerHTML morphing via NodeListOf<ChildNode>
+			// morph(this.node, this.referenceNode.childNodes, this.morphlexOptions);
+		} else {
+			morph(this.node, this.referenceNode, this.morphlexOptions);
 		}
 	}
 
-	private beforeNodeAdded(node: Node): boolean {
-		return true;
+	private get morphlexOptions(): Options {
+		return {
+			ignoreActiveValue: this.idiomorphOptions.ignoreActiveValue,
+			beforeNodeAdded: this.beforeNodeAdded,
+			afterNodeAdded: this.afterNodeAdded,
+			beforeNodeMorphed: this.beforeNodeMorphed,
+			afterNodeMorphed: this.afterNodeMorphed,
+		};
 	}
 
-	private beforeNodeMorphed(oldNode: Node, newNode: Node): boolean {
-		return true;
+	private get beforeNodeAdded(): Options["beforeNodeAdded"] {
+		if (this.idiomorphOptions.callbacks?.beforeNodeAdded)
+			return ({ newNode, parentNode }: { newNode: Node; parentNode: Node | null }) => {
+				return this.idiomorphOptions.callbacks?.beforeNodeAdded?.(newNode) ?? true;
+			};
+	}
+
+	private get afterNodeAdded(): Options["afterNodeAdded"] {
+		if (this.idiomorphOptions.callbacks?.afterNodeAdded)
+			return ({ newNode }: { newNode: Node }) => {
+				this.idiomorphOptions.callbacks?.afterNodeAdded?.(newNode);
+			};
+	}
+
+	private get beforeNodeMorphed(): Options["beforeNodeMorphed"] {
+		if (this.idiomorphOptions.ignoreActive)
+			return ({ node, referenceNode }: { node: Node; referenceNode: Node }) => {
+				if (document.activeElement === node) return false;
+				return this.idiomorphOptions.callbacks?.beforeNodeMorphed?.(node, referenceNode) ?? true;
+			};
+
+		if (this.idiomorphOptions.callbacks?.beforeNodeMorphed)
+			return ({ node, referenceNode }: { node: Node; referenceNode: Node }) => {
+				return this.idiomorphOptions.callbacks?.beforeNodeMorphed?.(node, referenceNode) ?? true;
+			};
+	}
+
+	private get afterNodeMorphed(): Options["afterNodeMorphed"] {
+		if (this.idiomorphOptions.callbacks?.afterNodeMorphed)
+			return ({ node, referenceNode }: { node: Node; referenceNode: Node }) => {
+				this.idiomorphOptions.callbacks?.afterNodeMorphed?.(node, referenceNode);
+			};
 	}
 }

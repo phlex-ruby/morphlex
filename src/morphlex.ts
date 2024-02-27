@@ -33,7 +33,7 @@ export interface Options {
 	preserveModifiedValues?: boolean;
 
 	beforeNodeMorphed?: ({ node, referenceNode }: { node: Node; referenceNode: Node }) => boolean;
-	afterNodeMorphed?: ({ node }: { node: Node }) => void;
+	afterNodeMorphed?: ({ node, referenceNode }: { node: Node; referenceNode: Node }) => void;
 
 	beforeNodeAdded?: ({ newNode, parentNode }: { newNode: Node; parentNode: ParentNode | null }) => boolean;
 	afterNodeAdded?: ({ newNode }: { newNode: Node }) => void;
@@ -141,7 +141,7 @@ function morphNode(node: ChildNode, ref: ReadonlyNode<ChildNode>, context: Conte
 		} else replaceNode(node, ref.cloneNode(true), context);
 	}
 
-	context.afterNodeMorphed?.({ node });
+	context.afterNodeMorphed?.({ node, referenceNode: ref as ChildNode });
 }
 
 function morphAttributes(element: Element, ref: ReadonlyNode<Element>, context: Context): void {
