@@ -5,7 +5,7 @@
 	"license": "MIT",
 	"type": "module",
 	"description": "A safe, tiny (less than 1KB minified & gzipped), optimal DOM morphing library written in TypeScript.",
-	"main": "dist/morphlex.js",
+	"main": "dist/morphlex.min.js",
 	"types": "dist/morphlex.d.ts",
 	"funding": {
 		"type": "github",
