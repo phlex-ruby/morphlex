@@ -27,41 +27,43 @@ export class Idiomorph {
 		};
 	}
 	get beforeNodeAdded() {
-		if (this.idiomorphOptions.callbacks?.beforeNodeAdded)
+		const idiomorphCallback = this.idiomorphOptions.callbacks?.beforeNodeAdded;
+		if (idiomorphCallback)
 			return ({ newNode, parentNode }) => {
-				return this.idiomorphOptions.callbacks?.beforeNodeAdded?.(newNode) ?? true;
+				return idiomorphCallback(newNode) ?? true;
 			};
 	}
 	get afterNodeAdded() {
-		if (this.idiomorphOptions.callbacks?.afterNodeAdded)
+		const idiomorphCallback = this.idiomorphOptions.callbacks?.afterNodeAdded;
+		if (idiomorphCallback)
 			return ({ newNode }) => {
-				this.idiomorphOptions.callbacks?.afterNodeAdded?.(newNode);
+				idiomorphCallback(newNode);
 			};
 	}
 	get beforeNodeMorphed() {
+		const idiomorphCallback = this.idiomorphOptions.callbacks?.beforeNodeMorphed;
 		if (this.idiomorphOptions.ignoreActive)
 			return ({ node, referenceNode }) => {
 				if (document.activeElement === node) return false;
-				return this.idiomorphOptions.callbacks?.beforeNodeMorphed?.(node, referenceNode) ?? true;
+				return idiomorphCallback?.(node, referenceNode) ?? true;
 			};
-		if (this.idiomorphOptions.callbacks?.beforeNodeMorphed)
+		if (idiomorphCallback)
 			return ({ node, referenceNode }) => {
-				return this.idiomorphOptions.callbacks?.beforeNodeMorphed?.(node, referenceNode) ?? true;
+				return idiomorphCallback(node, referenceNode) ?? true;
 			};
 	}
 	get afterNodeMorphed() {
-		if (this.idiomorphOptions.callbacks?.afterNodeMorphed)
+		const idiomorphCallback = this.idiomorphOptions.callbacks?.afterNodeMorphed;
+		if (idiomorphCallback)
 			return ({ node, referenceNode }) => {
-				this.idiomorphOptions.callbacks?.afterNodeMorphed?.(node, referenceNode);
+				idiomorphCallback(node, referenceNode);
 			};
 	}
 	get beforeAttributeUpdated() {
-		if (this.idiomorphOptions.callbacks?.beforeAttributeUpdated)
+		const idiomorphCallback = this.idiomorphOptions.callbacks?.beforeAttributeUpdated;
+		if (idiomorphCallback)
 			return ({ element, attributeName, newValue }) => {
-				return (
-					this.idiomorphOptions.callbacks?.beforeAttributeUpdated?.(attributeName, element, newValue ? "updated" : "removed") ??
-					true
-				);
+				return idiomorphCallback(attributeName, element, newValue ? "updated" : "removed") ?? true;
 			};
 	}
 }
