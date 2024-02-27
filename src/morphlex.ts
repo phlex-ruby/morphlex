@@ -48,9 +48,7 @@ interface Options {
 	afterPropertyUpdated?: (propertyName: ObjectKey, previousValue: unknown, node: Node) => void;
 }
 
-type Context = Options & {
-	idMap: IdMap;
-};
+type Context = Options & { idMap: IdMap };
 
 export function morph(node: ChildNode, reference: ChildNode, options: Options = {}): void {
 	const readonlyReference = reference as ReadonlyNode<ChildNode>;
