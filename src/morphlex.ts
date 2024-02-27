@@ -1,10 +1,9 @@
 type IdSet = Set<string>;
 type IdMap = WeakMap<ReadonlyNode<Node>, IdSet>;
+type ObjectKey = string | number | symbol;
 
 // Maps to a type that can only read properties
-type StrongReadonly<T> = {
-	readonly [K in keyof T as T[K] extends Function ? never : K]: T[K];
-};
+type StrongReadonly<T> = { readonly [K in keyof T as T[K] extends Function ? never : K]: T[K] };
 
 // Maps a Node to a type limited to read-only properties and methods for that Node
 type ReadonlyNode<T extends Node> =
@@ -30,17 +29,14 @@ type ReadonlyNodeList<T extends Node> =
 	  };
 
 interface Options {
-	callbacks: Callbacks;
-	ignoreActiveValue: boolean;
-	preserveModifiedValues: boolean;
-}
+	ignoreActiveValue?: boolean;
+	preserveModifiedValues?: boolean;
 
-interface Callbacks {
-	beforeNodeMorphed?: (node: Node, referenceNode: Node) => boolean;
-	afterNodeMorphed?: (node: Node) => void;
+	// beforeNodeMorphed?: (node: Node, referenceNode: Node) => boolean;
+	// afterNodeMorphed?: (node: Node) => void;
 
-	// beforeNodeAdded?: (newNode: Node, parentNode: ParentNode) => boolean;
-	// afterNodeAdded?: (newNode: Node) => void;
+	beforeNodeAdded?: (newNode: Node, parentNode: ParentNode | null) => boolean;
+	afterNodeAdded?: (newNode: Node) => void;
 
 	beforeNodeRemoved?: (oldNode: Node) => boolean;
 	afterNodeRemoved?: (oldNode: Node) => void;
@@ -48,11 +44,11 @@ interface Callbacks {
 	beforeAttributeUpdated?: (attributeName: string, newValue: string, element: Element) => boolean;
 	afterAttributeUpdated?: (attributeName: string, previousValue: string | null, element: Element) => void;
 
-	beforePropertyUpdated?: (propertyName: string | number | symbol, newValue: unknown, node: Node) => boolean;
-	afterPropertyUpdated?: (propertyName: string | number | symbol, previousValue: unknown, node: Node) => void;
+	beforePropertyUpdated?: (propertyName: ObjectKey, newValue: unknown, node: Node) => boolean;
+	afterPropertyUpdated?: (propertyName: ObjectKey, previousValue: unknown, node: Node) => void;
 }
 
-export function morph(node: ChildNode, reference: ChildNode, opts: Options): void {
+export function morph(node: ChildNode, reference: ChildNode, options: Options = {}): void {
 	const readonlyReference = reference as ReadonlyNode<ChildNode>;
 	const idMap: IdMap = new WeakMap();
 
@@ -61,7 +57,7 @@ export function morph(node: ChildNode, reference: ChildNode, opts: Options): voi
 		populateIdSets(readonlyReference, idMap);
 	}
 
-	morphNodes(node, readonlyReference, idMap, opts);
+	morphNodes(node, readonlyReference, idMap, options);
 }
 
 // For each node with an ID, push that ID into the IdSet on the IdMap, for each of its parent elements.
@@ -86,9 +82,9 @@ function populateIdSets(node: ReadonlyNode<ParentNode>, idMap: IdMap): void {
 }
 
 // This is where we actually morph the nodes. The `morph` function exists to set up the `idMap`.
-function morphNodes(node: ChildNode, ref: ReadonlyNode<ChildNode>, idMap: IdMap, opts: Options): void {
+function morphNodes(node: ChildNode, ref: ReadonlyNode<ChildNode>, idMap: IdMap, options: Options): void {
 	if (isElement(node) && isElement(ref) && node.tagName === ref.tagName) {
-		if (node.hasAttributes() || ref.hasAttributes()) morphAttributes(node, ref, opts);
+		if (node.hasAttributes() || ref.hasAttributes()) morphAttributes(node, ref, options);
 		if (isHead(node) && isHead(ref)) {
 			const refChildNodes: Map<string, ReadonlyNode<Element>> = new Map();
 			for (const child of ref.children) refChildNodes.set(child.outerHTML, child);
@@ -97,67 +93,67 @@ function morphNodes(node: ChildNode, ref: ReadonlyNode<ChildNode>, idMap: IdMap,
 				const refChild = refChildNodes.get(key);
 				refChild ? refChildNodes.delete(key) : child.remove();
 			}
-			for (const refChild of refChildNodes.values()) node.appendChild(refChild.cloneNode(true));
-		} else if (node.hasChildNodes() || ref.hasChildNodes()) morphChildNodes(node, ref, idMap, opts);
+			for (const refChild of refChildNodes.values()) appendChild(node, refChild.cloneNode(true), options);
+		} else if (node.hasChildNodes() || ref.hasChildNodes()) morphChildNodes(node, ref, idMap, options);
 	} else {
 		if (isText(node) && isText(ref)) {
-			if (node.textContent !== ref.textContent) node.textContent = ref.textContent;
+			updateProperty(node, "textContent", ref.textContent, options);
 		} else if (isComment(node) && isComment(ref)) {
-			if (node.nodeValue !== ref.nodeValue) node.nodeValue = ref.nodeValue;
-		} else node.replaceWith(ref.cloneNode(true));
+			updateProperty(node, "nodeValue", ref.nodeValue, options);
+		} else replaceNode(node, ref.cloneNode(true), options);
 	}
 }
 
-function morphAttributes(elm: Element, ref: ReadonlyNode<Element>, opts: Options): void {
+function morphAttributes(elment: Element, ref: ReadonlyNode<Element>, options: Options): void {
 	// Remove any excess attributes from the element that aren’t present in the reference.
-	for (const { name } of elm.attributes) ref.hasAttribute(name) || elm.removeAttribute(name);
+	for (const { name } of elment.attributes) ref.hasAttribute(name) || elment.removeAttribute(name);
 
 	// Copy attributes from the reference to the element, if they don’t already match.
 	for (const { name, value } of ref.attributes) {
-		const previousValue = elm.getAttribute(name);
-		if (previousValue !== value && (opts.callbacks.beforeAttributeUpdated?.(name, value, elm) ?? true)) {
-			elm.setAttribute(name, value);
-			opts.callbacks.afterAttributeUpdated?.(name, previousValue, elm);
+		const previousValue = elment.getAttribute(name);
+		if (previousValue !== value && (options.beforeAttributeUpdated?.(name, value, elment) ?? true)) {
+			elment.setAttribute(name, value);
+			options.afterAttributeUpdated?.(name, previousValue, elment);
 		}
 	}
 
 	// For certain types of elements, we need to do some extra work to ensure
 	// the element’s state matches the reference elements’ state.
-	if (isInput(elm) && isInput(ref)) {
-		updateProperty(elm, "checked", ref.checked, opts);
-		updateProperty(elm, "disabled", ref.disabled, opts);
-		updateProperty(elm, "indeterminate", ref.indeterminate, opts);
+	if (isInput(elment) && isInput(ref)) {
+		updateProperty(elment, "checked", ref.checked, options);
+		updateProperty(elment, "disabled", ref.disabled, options);
+		updateProperty(elment, "indeterminate", ref.indeterminate, options);
 		if (
-			elm.type !== "file" &&
-			!(opts.ignoreActiveValue && document.activeElement === elm) &&
-			!(opts.preserveModifiedValues && elm.value !== elm.defaultValue)
+			elment.type !== "file" &&
+			!(options.ignoreActiveValue && document.activeElement === elment) &&
+			!(options.preserveModifiedValues && elment.value !== elment.defaultValue)
 		)
-			updateProperty(elm, "value", ref.value, opts);
-	} else if (isOption(elm) && isOption(ref)) updateProperty(elm, "selected", ref.selected, opts);
-	else if (isTextArea(elm) && isTextArea(ref)) {
-		updateProperty(elm, "value", ref.value, opts);
+			updateProperty(elment, "value", ref.value, options);
+	} else if (isOption(elment) && isOption(ref)) updateProperty(elment, "selected", ref.selected, options);
+	else if (isTextArea(elment) && isTextArea(ref)) {
+		updateProperty(elment, "value", ref.value, options);
 
 		// TODO: Do we need this? If so, how do we integrate with the callback?
-		const text = elm.firstChild;
-		if (text && isText(text) && text.textContent !== ref.value) text.textContent = ref.value;
+		const text = elment.firstChild;
+		if (text && isText(text)) updateProperty(text, "textContent", ref.value, options);
 	}
 }
 
-function updateProperty<E extends Element, P extends keyof E>(
-	element: E,
+function updateProperty<N extends Node, P extends keyof N>(
+	element: N,
 	propertyName: P,
-	newValue: E[P],
-	opts: Options,
+	newValue: N[P],
+	options: Options,
 ): void {
 	const previousValue = element[propertyName];
-	if (previousValue !== newValue && (opts.callbacks.beforePropertyUpdated?.(propertyName, newValue, element) ?? true)) {
+	if (previousValue !== newValue && (options.beforePropertyUpdated?.(propertyName, newValue, element) ?? true)) {
 		element[propertyName] = newValue;
-		opts.callbacks.afterPropertyUpdated?.(propertyName, previousValue, element);
+		options.afterPropertyUpdated?.(propertyName, previousValue, element);
 	}
 }
 
 // Iterates over the child nodes of the reference element, morphing the main element’s child nodes to match.
-function morphChildNodes(element: Element, ref: ReadonlyNode<Element>, idMap: IdMap, opts: Options): void {
+function morphChildNodes(element: Element, ref: ReadonlyNode<Element>, idMap: IdMap, options: Options): void {
 	const childNodes = [...element.childNodes];
 	const refChildNodes = [...ref.childNodes];
 
@@ -165,12 +161,12 @@ function morphChildNodes(element: Element, ref: ReadonlyNode<Element>, idMap: Id
 		const child = childNodes.at(i);
 		const refChild = refChildNodes.at(i);
 
-		if (child && refChild) morphChildNode(child, refChild, element, idMap, opts);
+		if (child && refChild) morphChildNode(child, refChild, element, idMap, options);
 		else if (refChild) {
-			element.appendChild(refChild.cloneNode(true));
-		} else if (child && (opts.callbacks.beforeNodeRemoved?.(child) ?? true)) {
+			appendChild(element, refChild.cloneNode(true), options);
+		} else if (child && (options.beforeNodeRemoved?.(child) ?? true)) {
 			child.remove();
-			opts.callbacks.afterNodeRemoved?.(child);
+			options.afterNodeRemoved?.(child);
 		}
 	}
 
@@ -184,10 +180,10 @@ function morphChildNode(
 	ref: ReadonlyNode<ChildNode>,
 	parent: Element,
 	idMap: IdMap,
-	opts: Options,
+	options: Options,
 ): void {
-	if (isElement(child) && isElement(ref)) morphChildElement(child, ref, parent, idMap, opts);
-	else morphNodes(child, ref, idMap, opts);
+	if (isElement(child) && isElement(ref)) morphChildElement(child, ref, parent, idMap, options);
+	else morphNodes(child, ref, idMap, options);
 }
 
 function morphChildElement(
@@ -195,7 +191,7 @@ function morphChildElement(
 	ref: ReadonlyNode<Element>,
 	parent: Element,
 	idMap: IdMap,
-	opts: Options,
+	options: Options,
 ): void {
 	const refIdSet = idMap.get(ref);
 
@@ -210,14 +206,14 @@ function morphChildElement(
 		if (isElement(currentNode)) {
 			if (currentNode.id === ref.id) {
 				parent.insertBefore(currentNode, child);
-				return morphNodes(currentNode, ref, idMap, opts);
+				return morphNodes(currentNode, ref, idMap, options);
 			} else {
 				if (currentNode.id !== "") {
 					const currentIdSet = idMap.get(currentNode);
 
 					if (currentIdSet && refSetArray.some((it) => currentIdSet.has(it))) {
 						parent.insertBefore(currentNode, child);
-						return morphNodes(currentNode, ref, idMap, opts);
+						return morphNodes(currentNode, ref, idMap, options);
 					} else if (!nextMatchByTagName && currentNode.tagName === ref.tagName) {
 						nextMatchByTagName = currentNode;
 					}
@@ -230,8 +226,23 @@ function morphChildElement(
 
 	if (nextMatchByTagName) {
 		if (nextMatchByTagName !== child) parent.insertBefore(nextMatchByTagName, child);
-		morphNodes(nextMatchByTagName, ref, idMap, opts);
-	} else child.replaceWith(ref.cloneNode(true));
+		morphNodes(nextMatchByTagName, ref, idMap, options);
+	} else replaceNode(child, ref.cloneNode(true), options);
+}
+
+function replaceNode(node: ChildNode, newNode: Node, options: Options): void {
+	if ((options.beforeNodeRemoved?.(node) ?? true) && (options.beforeNodeAdded?.(newNode, node.parentNode) ?? true)) {
+		node.replaceWith(newNode);
+		options.afterNodeAdded?.(newNode);
+		options.afterNodeRemoved?.(node);
+	}
+}
+
+function appendChild(node: ParentNode, newNode: Node, options: Options): void {
+	if (options.beforeNodeAdded?.(newNode, node) ?? true) {
+		node.appendChild(newNode);
+		options.afterNodeAdded?.(newNode);
+	}
 }
 
 // We cannot use `instanceof` when nodes might be from different documents,
