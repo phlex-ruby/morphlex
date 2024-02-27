@@ -167,12 +167,7 @@ function morphChildNodes(element: Element, ref: ReadonlyNode<Element>, idMap: Id
 	while (element.childNodes.length > ref.childNodes.length) element.lastChild?.remove();
 }
 
-function updateProperty<N extends Node, P extends keyof N>(
-	element: N,
-	propertyName: P,
-	newValue: N[P],
-	options: Options,
-): void {
+function updateProperty<N extends Node, P extends keyof N>(element: N, propertyName: P, newValue: N[P], options: Options): void {
 	const previousValue = element[propertyName];
 	if (previousValue !== newValue && (options.beforePropertyUpdated?.(propertyName, newValue, element) ?? true)) {
 		element[propertyName] = newValue;
@@ -180,24 +175,12 @@ function updateProperty<N extends Node, P extends keyof N>(
 	}
 }
 
-function morphChildNode(
-	child: ChildNode,
-	ref: ReadonlyNode<ChildNode>,
-	parent: Element,
-	idMap: IdMap,
-	options: Options,
-): void {
+function morphChildNode(child: ChildNode, ref: ReadonlyNode<ChildNode>, parent: Element, idMap: IdMap, options: Options): void {
 	if (isElement(child) && isElement(ref)) morphChildElement(child, ref, parent, idMap, options);
 	else morphNode(child, ref, idMap, options);
 }
 
-function morphChildElement(
-	child: Element,
-	ref: ReadonlyNode<Element>,
-	parent: Element,
-	idMap: IdMap,
-	options: Options,
-): void {
+function morphChildElement(child: Element, ref: ReadonlyNode<Element>, parent: Element, idMap: IdMap, options: Options): void {
 	const refIdSet = idMap.get(ref);
 
 	// Generate the array in advance of the loop
