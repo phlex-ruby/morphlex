@@ -2,6 +2,8 @@ type ObjectKey = string | number | symbol;
 interface Options {
 	ignoreActiveValue?: boolean;
 	preserveModifiedValues?: boolean;
+	beforeNodeMorphed?: (node: Node, referenceNode: Node) => boolean;
+	afterNodeMorphed?: (node: Node) => void;
 	beforeNodeAdded?: (newNode: Node, parentNode: ParentNode | null) => boolean;
 	afterNodeAdded?: (newNode: Node) => void;
 	beforeNodeRemoved?: (oldNode: Node) => boolean;
