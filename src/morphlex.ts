@@ -189,12 +189,12 @@ function morphAttributes(element: Element, ref: ReadonlyNode<Element>, context: 
 
 // Iterates over the child nodes of the reference element, morphing the main element’s child nodes to match.
 function morphChildNodes(element: Element, ref: ReadonlyNode<Element>, context: Context): void {
-	const childNodes = [...element.childNodes];
-	const refChildNodes = [...ref.childNodes];
+	const childNodes = element.childNodes;
+	const refChildNodes = ref.childNodes;
 
-	for (let i = 0; i < Math.max(childNodes.length, refChildNodes.length); i++) {
-		const child = childNodes.at(i);
-		const refChild = refChildNodes.at(i);
+	for (let i = 0; i < refChildNodes.length; i++) {
+		const child = childNodes[i] as ChildNode | null;
+		const refChild = refChildNodes[i]; //as ReadonlyNode<ChildNode> | null;
 
 		if (child && refChild) {
 			if (isElement(child) && isElement(refChild)) morphChildElement(child, refChild, element, context);
@@ -203,6 +203,12 @@ function morphChildNodes(element: Element, ref: ReadonlyNode<Element>, context: 
 			appendChild(element, refChild.cloneNode(true), context);
 		} else if (child) {
 			removeNode(child, context);
+		}
+
+		// Clean up any excess nodes that may be left over
+		while (element.childNodes.length > ref.childNodes.length) {
+			const child = element.lastChild;
+			if (child) removeNode(child, context);
 		}
 	}
 }
@@ -228,18 +234,21 @@ function morphChildElement(child: Element, ref: ReadonlyNode<Element>, parent: E
 	while (currentNode) {
 		if (isElement(currentNode)) {
 			const id = currentNode.id;
-			if (id === ref.id) {
-				insertBeforeSearchingBackwards(parent, currentNode, child);
-				return morphNode(currentNode, ref, context);
-			} else {
-				if (id !== "") {
+
+			if (!nextMatchByTagName && currentNode.tagName === ref.tagName) {
+				nextMatchByTagName = currentNode;
+			}
+
+			if (id !== "") {
+				if (id === ref.id) {
+					insertBefore(parent, currentNode, child);
+					return morphNode(currentNode, ref, context);
+				} else {
 					const currentIdSet = context.idMap.get(currentNode);
 
 					if (currentIdSet && refSetArray.some((it) => currentIdSet.has(it))) {
-						insertBeforeSearchingBackwards(parent, currentNode, child);
+						insertBefore(parent, currentNode, child);
 						return morphNode(currentNode, ref, context);
-					} else if (!nextMatchByTagName && currentNode.tagName === ref.tagName) {
-						nextMatchByTagName = currentNode;
 					}
 				}
 			}
@@ -249,12 +258,12 @@ function morphChildElement(child: Element, ref: ReadonlyNode<Element>, parent: E
 	}
 
 	if (nextMatchByTagName) {
-		insertBeforeSearchingBackwards(parent, nextMatchByTagName, child);
+		insertBefore(parent, nextMatchByTagName, child);
 		morphNode(nextMatchByTagName, ref, context);
 	} else {
 		// TODO: this is missing an inserted callback
 		// TODO: we'll need to clean up the list again after this
-		insertBeforeSearchingBackwards(parent, ref.cloneNode(true), child);
+		insertBefore(parent, ref.cloneNode(true), child);
 	}
 }
 
@@ -269,8 +278,9 @@ function replaceNode(node: ChildNode, newNode: Node, context: Context): void {
 	}
 }
 
-function insertBeforeSearchingBackwards(parent: ParentNode, node: Node, insertionPoint: ChildNode): void {
+function insertBefore(parent: ParentNode, node: Node, insertionPoint: ChildNode): void {
 	if (node === insertionPoint) return;
+
 	if (isElement(node)) {
 		const sensitivity = nodeSensitivity(node);
 
@@ -279,8 +289,10 @@ function insertBeforeSearchingBackwards(parent: ParentNode, node: Node, insertio
 
 			while (previousNode) {
 				const previousNodeSensitivity = nodeSensitivity(previousNode);
+
 				if (previousNodeSensitivity < sensitivity) {
 					parent.insertBefore(previousNode, node.nextSibling);
+
 					if (previousNode === insertionPoint) return;
 					previousNode = node.previousSibling;
 				} else {
