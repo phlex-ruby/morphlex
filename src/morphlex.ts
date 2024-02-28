@@ -261,8 +261,7 @@ function morphChildElement(child: Element, ref: ReadonlyNode<Element>, parent: E
 		insertBefore(parent, nextMatchByTagName, child);
 		morphNode(nextMatchByTagName, ref, context);
 	} else {
-		// TODO: this is missing an inserted callback
-		// TODO: we'll need to clean up the list again after this
+		// TODO: this is missing an added callback
 		insertBefore(parent, ref.cloneNode(true), child);
 	}
 }
