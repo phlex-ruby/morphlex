@@ -101,11 +101,11 @@ function morphChildNodes(element, ref, context) {
 		} else if (child) {
 			removeNode(child, context);
 		}
-		// Clean up any excess nodes that may be left over
-		while (element.childNodes.length > ref.childNodes.length) {
-			const child = element.lastChild;
-			if (child) removeNode(child, context);
-		}
+	}
+	// Clean up any excess nodes that may be left over
+	while (childNodes.length > refChildNodes.length) {
+		const child = element.lastChild;
+		if (child) removeNode(child, context);
 	}
 }
 function updateProperty(node, propertyName, newValue, context) {
