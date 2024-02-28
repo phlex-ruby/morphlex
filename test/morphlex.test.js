@@ -2,6 +2,26 @@ import { fixture, html, expect } from "@open-wc/testing";
 import { morph } from "../";
 
 describe("morph", () => {
+	it.only("doesn't cause iframes to reload", async () => {
+		const original = await fixture(
+			`<div>
+				<h1></h1>
+				<iframe id="1" src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe>
+			</div>`,
+		);
+
+		const reference = await fixture(
+			`<div>
+				<iframe id="1" src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe>
+				<h1></h1>
+			</div>`,
+		);
+
+		const originalIframe = original.querySelector("iframe");
+		morph(original, reference);
+		expect(original.outerHTML).to.equal(reference.outerHTML);
+	});
+
 	it("supports nodes from iframes", async () => {
 		const iframe = await fixture(html`<iframe></iframe>`);
 

@@ -88,19 +88,22 @@ function morphAttributes(element, ref, context) {
 }
 // Iterates over the child nodes of the reference element, morphing the main element’s child nodes to match.
 function morphChildNodes(element, ref, context) {
-	const childNodes = [...element.childNodes];
-	const refChildNodes = [...ref.childNodes];
+	const childNodes = element.childNodes;
+	const refChildNodes = ref.childNodes;
 	for (let i = 0; i < refChildNodes.length; i++) {
-		const child = childNodes.at(i);
-		const refChild = refChildNodes.at(i);
-		if (child && refChild) morphChildNode(child, refChild, element, context);
-		else if (refChild) {
+		const child = childNodes[i];
+		const refChild = refChildNodes[i]; //as ReadonlyNode<ChildNode> | null;
+		if (child && refChild) {
+			if (isElement(child) && isElement(refChild)) morphChildElement(child, refChild, element, context);
+			else morphNode(child, refChild, context);
+		} else if (refChild) {
 			appendChild(element, refChild.cloneNode(true), context);
-		} else if (child) removeNode(child, context);
+		} else if (child) {
+			removeNode(child, context);
+		}
 	}
-	// Remove any excess child nodes from the main element. This is separate because
-	// the loop above might modify the length of the main element’s child nodes.
-	while (element.childNodes.length > ref.childNodes.length) {
+	// Clean up any excess nodes that may be left over
+	while (childNodes.length > refChildNodes.length) {
 		const child = element.lastChild;
 		if (child) removeNode(child, context);
 	}
@@ -112,10 +115,6 @@ function updateProperty(node, propertyName, newValue, context) {
 		context.afterPropertyUpdated?.({ node, propertyName, previousValue });
 	}
 }
-function morphChildNode(child, ref, parent, context) {
-	if (isElement(child) && isElement(ref)) morphChildElement(child, ref, parent, context);
-	else morphNode(child, ref, context);
-}
 function morphChildElement(child, ref, parent, context) {
 	const refIdSet = context.idMap.get(ref);
 	// Generate the array in advance of the loop
@@ -125,17 +124,19 @@ function morphChildElement(child, ref, parent, context) {
 	// Try find a match by idSet, while also looking out for the next best match by tagName.
 	while (currentNode) {
 		if (isElement(currentNode)) {
-			if (currentNode.id === ref.id) {
-				insertBefore(parent, currentNode, child);
-				return morphNode(currentNode, ref, context);
-			} else {
-				if (currentNode.id !== "") {
+			const id = currentNode.id;
+			if (!nextMatchByTagName && currentNode.tagName === ref.tagName) {
+				nextMatchByTagName = currentNode;
+			}
+			if (id !== "") {
+				if (id === ref.id) {
+					insertBefore(parent, currentNode, child);
+					return morphNode(currentNode, ref, context);
+				} else {
 					const currentIdSet = context.idMap.get(currentNode);
 					if (currentIdSet && refSetArray.some((it) => currentIdSet.has(it))) {
 						insertBefore(parent, currentNode, child);
 						return morphNode(currentNode, ref, context);
-					} else if (!nextMatchByTagName && currentNode.tagName === ref.tagName) {
-						nextMatchByTagName = currentNode;
 					}
 				}
 			}
@@ -145,7 +146,11 @@ function morphChildElement(child, ref, parent, context) {
 	if (nextMatchByTagName) {
 		insertBefore(parent, nextMatchByTagName, child);
 		morphNode(nextMatchByTagName, ref, context);
-	} else replaceNode(child, ref.cloneNode(true), context);
+	} else {
+		// TODO: this is missing an inserted callback
+		// TODO: we'll need to clean up the list again after this
+		insertBefore(parent, ref.cloneNode(true), child);
+	}
 }
 function replaceNode(node, newNode, context) {
 	if (
@@ -157,8 +162,45 @@ function replaceNode(node, newNode, context) {
 		context.afterNodeRemoved?.({ oldNode: node });
 	}
 }
-function insertBefore(parent, node, before) {
-	if (node !== before) parent.insertBefore(node, before);
+function insertBefore(parent, node, insertionPoint) {
+	if (node === insertionPoint) return;
+	if (isElement(node)) {
+		const sensitivity = nodeSensitivity(node);
+		if (sensitivity > 0) {
+			let previousNode = node.previousSibling;
+			while (previousNode) {
+				const previousNodeSensitivity = nodeSensitivity(previousNode);
+				if (previousNodeSensitivity < sensitivity) {
+					parent.insertBefore(previousNode, node.nextSibling);
+					if (previousNode === insertionPoint) return;
+					previousNode = node.previousSibling;
+				} else {
+					break;
+				}
+			}
+		}
+	}
+	parent.insertBefore(node, insertionPoint);
+}
+const sensitiveElements = new Set(["iframe", "audio", "video", "embed", "object", "canvas"]);
+const inputElements = new Set(["input", "select", "textarea"]);
+function nodeSensitivity(node) {
+	let sensitivity = 0;
+	if (!isElement(node)) return sensitivity;
+	const localName = node.localName;
+	if (inputElements.has(localName) || node.getAttribute("contenteditable")) {
+		sensitivity += 1;
+		if (node === document.activeElement) sensitivity += 1;
+		if (node instanceof HTMLInputElement && node.value !== node.defaultValue) sensitivity += 1;
+	}
+	if (sensitiveElements.has(localName)) {
+		sensitivity += 3;
+		if (node instanceof HTMLMediaElement && !node.ended) {
+			if (!node.paused) sensitivity += 1;
+			if (node.currentTime > 0) sensitivity += 1;
+		}
+	}
+	return sensitivity;
 }
 function appendChild(node, newNode, context) {
 	if (context.beforeNodeAdded?.({ newNode, parentNode: node }) ?? true) {
