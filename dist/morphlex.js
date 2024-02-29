@@ -1,13 +1,27 @@
 export function morph(node, reference, options = {}) {
-	const readonlyReference = reference;
-	const idMap = new WeakMap();
-	const sensitivityMap = new WeakMap();
-	if (isParentNode(node) && isParentNode(readonlyReference)) {
-		populateIdSets(node, idMap);
-		populateIdSets(readonlyReference, idMap);
-		populateSensivityMap(node, sensitivityMap);
+	new Morph(options).morph(node, reference);
+}
+class Morph {
+	idMap;
+	sensitivityMap;
+	options;
+	constructor(options = {}) {
+		this.options = options;
+		this.idMap = new WeakMap();
+		this.sensitivityMap = new WeakMap();
 	}
-	morphNode(node, readonlyReference, { ...options, idMap, sensitivityMap });
+	morph(node, reference) {
+		const readonlyReference = reference;
+		if (isParentNode(node) && isParentNode(readonlyReference)) {
+			populateIdSets(node, this.idMap);
+			populateIdSets(readonlyReference, this.idMap);
+			populateSensivityMap(node, this.sensitivityMap);
+		}
+		morphNode(node, readonlyReference, this.context);
+	}
+	get context() {
+		return { ...this.options, idMap: this.idMap, sensitivityMap: this.sensitivityMap };
+	}
 }
 function populateSensivityMap(node, sensivityMap) {
 	const sensitiveElements = node.querySelectorAll("iframe,video,object,embed,audio,input,textarea,canvas");

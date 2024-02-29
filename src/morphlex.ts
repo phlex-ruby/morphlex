@@ -86,17 +86,35 @@ export interface Options {
 type Context = Options & { idMap: IdMap; sensitivityMap: SensivityMap };
 
 export function morph(node: ChildNode, reference: ChildNode, options: Options = {}): void {
-	const readonlyReference = reference as ReadonlyNode<ChildNode>;
-	const idMap: IdMap = new WeakMap();
-	const sensitivityMap: SensivityMap = new WeakMap();
+	new Morph(options).morph(node, reference);
+}
 
-	if (isParentNode(node) && isParentNode(readonlyReference)) {
-		populateIdSets(node, idMap);
-		populateIdSets(readonlyReference, idMap);
-		populateSensivityMap(node, sensitivityMap);
+class Morph {
+	private readonly idMap: IdMap;
+	private readonly sensitivityMap: SensivityMap;
+	private readonly options: Options;
+
+	constructor(options: Options = {}) {
+		this.options = options;
+		this.idMap = new WeakMap();
+		this.sensitivityMap = new WeakMap();
 	}
 
-	morphNode(node, readonlyReference, { ...options, idMap, sensitivityMap });
+	morph(node: ChildNode, reference: ChildNode): void {
+		const readonlyReference = reference as ReadonlyNode<ChildNode>;
+
+		if (isParentNode(node) && isParentNode(readonlyReference)) {
+			populateIdSets(node, this.idMap);
+			populateIdSets(readonlyReference, this.idMap);
+			populateSensivityMap(node, this.sensitivityMap);
+		}
+
+		morphNode(node, readonlyReference, this.context);
+	}
+
+	get context(): Context {
+		return { ...this.options, idMap: this.idMap, sensitivityMap: this.sensitivityMap };
+	}
 }
 
 function populateSensivityMap(node: ReadonlyNode<ParentNode>, sensivityMap: SensivityMap): void {
