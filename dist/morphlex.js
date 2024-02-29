@@ -80,7 +80,7 @@ class Morph {
 				this.#updateProperty(node, "nodeValue", ref.nodeValue);
 			} else this.#replaceNode(node, ref.cloneNode(true));
 		}
-		this.#options.afterNodeMorphed?.({ node });
+		this.#options.afterNodeMorphed?.({ node, referenceNode: ref });
 	}
 	#morphAttributes(element, ref) {
 		// Remove any excess attributes from the element that aren’t present in the reference.

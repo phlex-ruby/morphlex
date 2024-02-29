@@ -1,12 +1,16 @@
 {
 	"name": "morphlex",
-	"version": "0.0.9",
+	"version": "0.0.10",
 	"author": "Joel Drapper",
 	"license": "MIT",
 	"type": "module",
 	"description": "A tiny, optimal DOM morphing library written in TypeScript.",
 	"main": "dist/morphlex.min.js",
 	"types": "dist/morphlex.d.ts",
+	"homepage": "https://github.com/joeldrapper/morphlex",
+	"bugs": {
+		"url": "https://github.com/joeldrapper/morphlex/issues"
+	},
 	"funding": {
 		"type": "github",
 		"url": "https://github.com/sponsors/joeldrapper"
