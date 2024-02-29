@@ -61,7 +61,7 @@ class Morph {
 	// This is where we actually morph the nodes. The `morph` function (above) exists only to set up the `idMap`.
 	#morphNode(node, ref) {
 		if (!(this.#options.beforeNodeMorphed?.({ node, referenceNode: ref }) ?? true)) return;
-		if (isElement(node) && isElement(ref) && node.tagName === ref.tagName) {
+		if (isElement(node) && isElement(ref) && node.localName === ref.localName) {
 			if (node.hasAttributes() || ref.hasAttributes()) this.#morphAttributes(node, ref);
 			if (isHead(node) && isHead(ref)) {
 				const refChildNodes = new Map();
@@ -155,7 +155,7 @@ class Morph {
 		while (currentNode) {
 			if (isElement(currentNode)) {
 				const id = currentNode.id;
-				if (!nextMatchByTagName && currentNode.tagName === ref.tagName) {
+				if (!nextMatchByTagName && currentNode.localName === ref.localName) {
 					nextMatchByTagName = currentNode;
 				}
 				if (id !== "") {

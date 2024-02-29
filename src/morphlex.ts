@@ -163,7 +163,7 @@ class Morph {
 	#morphNode(node: ChildNode, ref: ReadonlyNode<ChildNode>): void {
 		if (!(this.#options.beforeNodeMorphed?.({ node, referenceNode: ref as ChildNode }) ?? true)) return;
 
-		if (isElement(node) && isElement(ref) && node.tagName === ref.tagName) {
+		if (isElement(node) && isElement(ref) && node.localName === ref.localName) {
 			if (node.hasAttributes() || ref.hasAttributes()) this.#morphAttributes(node, ref);
 			if (isHead(node) && isHead(ref)) {
 				const refChildNodes: Map<string, ReadonlyNode<Element>> = new Map();
@@ -271,7 +271,7 @@ class Morph {
 			if (isElement(currentNode)) {
 				const id = currentNode.id;
 
-				if (!nextMatchByTagName && currentNode.tagName === ref.tagName) {
+				if (!nextMatchByTagName && currentNode.localName === ref.localName) {
 					nextMatchByTagName = currentNode;
 				}
 
