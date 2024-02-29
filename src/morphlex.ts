@@ -90,34 +90,34 @@ export function morph(node: ChildNode, reference: ChildNode, options: Options = 
 }
 
 class Morph {
-	private readonly idMap: IdMap;
-	private readonly sensivityMap: SensivityMap;
-	private readonly options: Options;
+	readonly #idMap: IdMap;
+	readonly #sensivityMap: SensivityMap;
+	readonly #options: Options;
 
 	constructor(options: Options = {}) {
-		this.options = options;
-		this.idMap = new WeakMap();
-		this.sensivityMap = new WeakMap();
+		this.#options = options;
+		this.#idMap = new WeakMap();
+		this.#sensivityMap = new WeakMap();
 	}
 
 	morph(node: ChildNode, reference: ChildNode): void {
 		const readonlyReference = reference as ReadonlyNode<ChildNode>;
 
 		if (isParentNode(node) && isParentNode(readonlyReference)) {
-			this.populateIdSets(node);
-			this.populateIdSets(readonlyReference);
-			this.populateSensivityMap(node);
+			this.#populateIdSets(node);
+			this.#populateIdSets(readonlyReference);
+			this.#populateSensivityMap(node);
 		}
 
-		this.morphNode(node, readonlyReference);
+		this.#morphNode(node, readonlyReference);
 	}
 
 	// TODO: Get rid of this
 	get context(): Context {
-		return { ...this.options, idMap: this.idMap, sensitivityMap: this.sensivityMap };
+		return { ...this.#options, idMap: this.#idMap, sensitivityMap: this.#sensivityMap };
 	}
 
-	private populateSensivityMap(node: ReadonlyNode<ParentNode>): void {
+	#populateSensivityMap(node: ReadonlyNode<ParentNode>): void {
 		const sensitiveElements = node.querySelectorAll("iframe,video,object,embed,audio,input,textarea,canvas");
 		for (const sensitiveElement of sensitiveElements) {
 			let sensivity = 0;
@@ -138,7 +138,7 @@ class Morph {
 
 			let current: ReadonlyNode<Element> | null = sensitiveElement;
 			while (current) {
-				this.sensivityMap.set(current, (this.sensivityMap.get(current) || 0) + sensivity);
+				this.#sensivityMap.set(current, (this.#sensivityMap.get(current) || 0) + sensivity);
 				if (current === node) break;
 				current = current.parentElement;
 			}
@@ -146,7 +146,7 @@ class Morph {
 	}
 
 	// For each node with an ID, push that ID into the IdSet on the IdMap, for each of its parent elements.
-	private populateIdSets(node: ReadonlyNode<ParentNode>): void {
+	#populateIdSets(node: ReadonlyNode<ParentNode>): void {
 		const elementsWithIds = node.querySelectorAll("[id]");
 
 		for (const elementWithId of elementsWithIds) {
@@ -158,8 +158,8 @@ class Morph {
 			let current: ReadonlyNode<Element> | null = elementWithId;
 
 			while (current) {
-				const idSet: IdSet | undefined = this.idMap.get(current);
-				idSet ? idSet.add(id) : this.idMap.set(current, new Set([id]));
+				const idSet: IdSet | undefined = this.#idMap.get(current);
+				idSet ? idSet.add(id) : this.#idMap.set(current, new Set([id]));
 				if (current === node) break;
 				current = current.parentElement;
 			}
@@ -167,41 +167,41 @@ class Morph {
 	}
 
 	// This is where we actually morph the nodes. The `morph` function (above) exists only to set up the `idMap`.
-	private morphNode(node: ChildNode, ref: ReadonlyNode<ChildNode>): void {
-		if (!(this.options.beforeNodeMorphed?.({ node, referenceNode: ref as ChildNode }) ?? true)) return;
+	#morphNode(node: ChildNode, ref: ReadonlyNode<ChildNode>): void {
+		if (!(this.#options.beforeNodeMorphed?.({ node, referenceNode: ref as ChildNode }) ?? true)) return;
 
 		if (isElement(node) && isElement(ref) && node.tagName === ref.tagName) {
-			if (node.hasAttributes() || ref.hasAttributes()) this.morphAttributes(node, ref);
+			if (node.hasAttributes() || ref.hasAttributes()) this.#morphAttributes(node, ref);
 			if (isHead(node) && isHead(ref)) {
 				const refChildNodes: Map<string, ReadonlyNode<Element>> = new Map();
 				for (const child of ref.children) refChildNodes.set(child.outerHTML, child);
 				for (const child of node.children) {
 					const key = child.outerHTML;
 					const refChild = refChildNodes.get(key);
-					refChild ? refChildNodes.delete(key) : this.removeNode(child);
+					refChild ? refChildNodes.delete(key) : this.#removeNode(child);
 				}
-				for (const refChild of refChildNodes.values()) this.appendChild(node, refChild.cloneNode(true));
-			} else if (node.hasChildNodes() || ref.hasChildNodes()) this.morphChildNodes(node, ref);
+				for (const refChild of refChildNodes.values()) this.#appendChild(node, refChild.cloneNode(true));
+			} else if (node.hasChildNodes() || ref.hasChildNodes()) this.#morphChildNodes(node, ref);
 		} else {
 			if (isText(node) && isText(ref)) {
-				this.updateProperty(node, "textContent", ref.textContent);
+				this.#updateProperty(node, "textContent", ref.textContent);
 			} else if (isComment(node) && isComment(ref)) {
-				this.updateProperty(node, "nodeValue", ref.nodeValue);
-			} else this.replaceNode(node, ref.cloneNode(true));
+				this.#updateProperty(node, "nodeValue", ref.nodeValue);
+			} else this.#replaceNode(node, ref.cloneNode(true));
 		}
 
-		this.options.afterNodeMorphed?.({ node });
+		this.#options.afterNodeMorphed?.({ node });
 	}
 
-	private morphAttributes(element: Element, ref: ReadonlyNode<Element>): void {
+	#morphAttributes(element: Element, ref: ReadonlyNode<Element>): void {
 		// Remove any excess attributes from the element that aren’t present in the reference.
 		for (const { name, value } of element.attributes) {
 			if (
 				!ref.hasAttribute(name) &&
-				(this.options.beforeAttributeUpdated?.({ element, attributeName: name, newValue: null }) ?? true)
+				(this.#options.beforeAttributeUpdated?.({ element, attributeName: name, newValue: null }) ?? true)
 			) {
 				element.removeAttribute(name);
-				this.options.afterAttributeUpdated?.({ element, attributeName: name, previousValue: value });
+				this.#options.afterAttributeUpdated?.({ element, attributeName: name, previousValue: value });
 			}
 		}
 
@@ -210,37 +210,37 @@ class Morph {
 			const previousValue = element.getAttribute(name);
 			if (
 				previousValue !== value &&
-				(this.options.beforeAttributeUpdated?.({ element, attributeName: name, newValue: value }) ?? true)
+				(this.#options.beforeAttributeUpdated?.({ element, attributeName: name, newValue: value }) ?? true)
 			) {
 				element.setAttribute(name, value);
-				this.options.afterAttributeUpdated?.({ element, attributeName: name, previousValue });
+				this.#options.afterAttributeUpdated?.({ element, attributeName: name, previousValue });
 			}
 		}
 
 		// For certain types of elements, we need to do some extra work to ensure
 		// the element’s state matches the reference elements’ state.
 		if (isInput(element) && isInput(ref)) {
-			this.updateProperty(element, "checked", ref.checked);
-			this.updateProperty(element, "disabled", ref.disabled);
-			this.updateProperty(element, "indeterminate", ref.indeterminate);
+			this.#updateProperty(element, "checked", ref.checked);
+			this.#updateProperty(element, "disabled", ref.disabled);
+			this.#updateProperty(element, "indeterminate", ref.indeterminate);
 			if (
 				element.type !== "file" &&
-				!(this.options.ignoreActiveValue && document.activeElement === element) &&
-				!(this.options.preserveModifiedValues && element.value !== element.defaultValue)
+				!(this.#options.ignoreActiveValue && document.activeElement === element) &&
+				!(this.#options.preserveModifiedValues && element.value !== element.defaultValue)
 			)
-				this.updateProperty(element, "value", ref.value);
-		} else if (isOption(element) && isOption(ref)) this.updateProperty(element, "selected", ref.selected);
+				this.#updateProperty(element, "value", ref.value);
+		} else if (isOption(element) && isOption(ref)) this.#updateProperty(element, "selected", ref.selected);
 		else if (isTextArea(element) && isTextArea(ref)) {
-			this.updateProperty(element, "value", ref.value);
+			this.#updateProperty(element, "value", ref.value);
 
 			// TODO: Do we need this? If so, how do we integrate with the callback?
 			const text = element.firstChild;
-			if (text && isText(text)) this.updateProperty(text, "textContent", ref.value);
+			if (text && isText(text)) this.#updateProperty(text, "textContent", ref.value);
 		}
 	}
 
 	// Iterates over the child nodes of the reference element, morphing the main element’s child nodes to match.
-	private morphChildNodes(element: Element, ref: ReadonlyNode<Element>): void {
+	#morphChildNodes(element: Element, ref: ReadonlyNode<Element>): void {
 		const childNodes = element.childNodes;
 		const refChildNodes = ref.childNodes;
 
@@ -249,24 +249,24 @@ class Morph {
 			const refChild = refChildNodes[i]; //as ReadonlyNode<ChildNode> | null;
 
 			if (child && refChild) {
-				if (isElement(child) && isElement(refChild)) this.morphChildElement(child, refChild, element);
-				else this.morphNode(child, refChild);
+				if (isElement(child) && isElement(refChild)) this.#morphChildElement(child, refChild, element);
+				else this.#morphNode(child, refChild);
 			} else if (refChild) {
-				this.appendChild(element, refChild.cloneNode(true));
+				this.#appendChild(element, refChild.cloneNode(true));
 			} else if (child) {
-				this.removeNode(child);
+				this.#removeNode(child);
 			}
 		}
 
 		// Clean up any excess nodes that may be left over
 		while (childNodes.length > refChildNodes.length) {
 			const child = element.lastChild;
-			if (child) this.removeNode(child);
+			if (child) this.#removeNode(child);
 		}
 	}
 
-	private morphChildElement(child: Element, ref: ReadonlyNode<Element>, parent: Element): void {
-		const refIdSet = this.idMap.get(ref);
+	#morphChildElement(child: Element, ref: ReadonlyNode<Element>, parent: Element): void {
+		const refIdSet = this.#idMap.get(ref);
 
 		// Generate the array in advance of the loop
 		const refSetArray = refIdSet ? [...refIdSet] : [];
@@ -285,14 +285,14 @@ class Morph {
 
 				if (id !== "") {
 					if (id === ref.id) {
-						this.insertBefore(parent, currentNode, child);
-						return this.morphNode(currentNode, ref);
+						this.#insertBefore(parent, currentNode, child);
+						return this.#morphNode(currentNode, ref);
 					} else {
-						const currentIdSet = this.idMap.get(currentNode);
+						const currentIdSet = this.#idMap.get(currentNode);
 
 						if (currentIdSet && refSetArray.some((it) => currentIdSet.has(it))) {
-							this.insertBefore(parent, currentNode, child);
-							return this.morphNode(currentNode, ref);
+							this.#insertBefore(parent, currentNode, child);
+							return this.#morphNode(currentNode, ref);
 						}
 					}
 				}
@@ -302,44 +302,44 @@ class Morph {
 		}
 
 		if (nextMatchByTagName) {
-			this.insertBefore(parent, nextMatchByTagName, child);
-			this.morphNode(nextMatchByTagName, ref);
+			this.#insertBefore(parent, nextMatchByTagName, child);
+			this.#morphNode(nextMatchByTagName, ref);
 		} else {
 			// TODO: this is missing an added callback
-			this.insertBefore(parent, ref.cloneNode(true), child);
+			this.#insertBefore(parent, ref.cloneNode(true), child);
 		}
 	}
 
-	private updateProperty<N extends Node, P extends keyof N>(node: N, propertyName: P, newValue: N[P]): void {
+	#updateProperty<N extends Node, P extends keyof N>(node: N, propertyName: P, newValue: N[P]): void {
 		const previousValue = node[propertyName];
-		if (previousValue !== newValue && (this.options.beforePropertyUpdated?.({ node, propertyName, newValue }) ?? true)) {
+		if (previousValue !== newValue && (this.#options.beforePropertyUpdated?.({ node, propertyName, newValue }) ?? true)) {
 			node[propertyName] = newValue;
-			this.options.afterPropertyUpdated?.({ node, propertyName, previousValue });
+			this.#options.afterPropertyUpdated?.({ node, propertyName, previousValue });
 		}
 	}
 
-	private replaceNode(node: ChildNode, newNode: Node): void {
+	#replaceNode(node: ChildNode, newNode: Node): void {
 		if (
-			(this.options.beforeNodeRemoved?.({ oldNode: node }) ?? true) &&
-			(this.options.beforeNodeAdded?.({ newNode, parentNode: node.parentNode }) ?? true)
+			(this.#options.beforeNodeRemoved?.({ oldNode: node }) ?? true) &&
+			(this.#options.beforeNodeAdded?.({ newNode, parentNode: node.parentNode }) ?? true)
 		) {
 			node.replaceWith(newNode);
-			this.options.afterNodeAdded?.({ newNode });
-			this.options.afterNodeRemoved?.({ oldNode: node });
+			this.#options.afterNodeAdded?.({ newNode });
+			this.#options.afterNodeRemoved?.({ oldNode: node });
 		}
 	}
 
-	private insertBefore(parent: ParentNode, node: Node, insertionPoint: ChildNode): void {
+	#insertBefore(parent: ParentNode, node: Node, insertionPoint: ChildNode): void {
 		if (node === insertionPoint) return;
 
 		if (isElement(node)) {
-			const sensitivity = this.sensivityMap.get(node) ?? 0;
+			const sensitivity = this.#sensivityMap.get(node) ?? 0;
 
 			if (sensitivity > 0) {
 				let previousNode = node.previousSibling;
 
 				while (previousNode) {
-					const previousNodeSensitivity = this.sensivityMap.get(previousNode) ?? 0;
+					const previousNodeSensitivity = this.#sensivityMap.get(previousNode) ?? 0;
 
 					if (previousNodeSensitivity < sensitivity) {
 						parent.insertBefore(previousNode, node.nextSibling);
@@ -356,17 +356,17 @@ class Morph {
 		parent.insertBefore(node, insertionPoint);
 	}
 
-	private appendChild(node: ParentNode, newNode: Node): void {
-		if (this.options.beforeNodeAdded?.({ newNode, parentNode: node }) ?? true) {
+	#appendChild(node: ParentNode, newNode: Node): void {
+		if (this.#options.beforeNodeAdded?.({ newNode, parentNode: node }) ?? true) {
 			node.appendChild(newNode);
-			this.options.afterNodeAdded?.({ newNode });
+			this.#options.afterNodeAdded?.({ newNode });
 		}
 	}
 
-	private removeNode(node: ChildNode): void {
-		if (this.options.beforeNodeRemoved?.({ oldNode: node }) ?? true) {
+	#removeNode(node: ChildNode): void {
+		if (this.#options.beforeNodeRemoved?.({ oldNode: node }) ?? true) {
 			node.remove();
-			this.options.afterNodeRemoved?.({ oldNode: node });
+			this.#options.afterNodeRemoved?.({ oldNode: node });
 		}
 	}
 }
