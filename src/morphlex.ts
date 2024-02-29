@@ -91,227 +91,231 @@ export function morph(node: ChildNode, reference: ChildNode, options: Options = 
 
 class Morph {
 	private readonly idMap: IdMap;
-	private readonly sensitivityMap: SensivityMap;
+	private readonly sensivityMap: SensivityMap;
 	private readonly options: Options;
 
 	constructor(options: Options = {}) {
 		this.options = options;
 		this.idMap = new WeakMap();
-		this.sensitivityMap = new WeakMap();
+		this.sensivityMap = new WeakMap();
 	}
 
 	morph(node: ChildNode, reference: ChildNode): void {
 		const readonlyReference = reference as ReadonlyNode<ChildNode>;
 
 		if (isParentNode(node) && isParentNode(readonlyReference)) {
-			populateIdSets(node, this.idMap);
-			populateIdSets(readonlyReference, this.idMap);
-			populateSensivityMap(node, this.sensitivityMap);
+			this.populateIdSets(node);
+			this.populateIdSets(readonlyReference);
+			this.populateSensivityMap(node);
 		}
 
-		morphNode(node, readonlyReference, this.context);
+		this.morphNode(node, readonlyReference);
 	}
 
+	// TODO: Get rid of this
 	get context(): Context {
-		return { ...this.options, idMap: this.idMap, sensitivityMap: this.sensitivityMap };
+		return { ...this.options, idMap: this.idMap, sensitivityMap: this.sensivityMap };
 	}
-}
 
-function populateSensivityMap(node: ReadonlyNode<ParentNode>, sensivityMap: SensivityMap): void {
-	const sensitiveElements = node.querySelectorAll("iframe,video,object,embed,audio,input,textarea,canvas");
-	for (const sensitiveElement of sensitiveElements) {
-		let sensivity = 0;
+	private populateSensivityMap(node: ReadonlyNode<ParentNode>): void {
+		const sensitiveElements = node.querySelectorAll("iframe,video,object,embed,audio,input,textarea,canvas");
+		for (const sensitiveElement of sensitiveElements) {
+			let sensivity = 0;
 
-		if (isInput(sensitiveElement) || isTextArea(sensitiveElement)) {
-			sensivity += 1;
+			if (isInput(sensitiveElement) || isTextArea(sensitiveElement)) {
+				sensivity += 1;
 
-			if (sensitiveElement.value !== sensitiveElement.defaultValue) sensivity += 1;
-			if (sensitiveElement === document.activeElement) sensivity += 1;
+				if (sensitiveElement.value !== sensitiveElement.defaultValue) sensivity += 1;
+				if (sensitiveElement === document.activeElement) sensivity += 1;
+			} else {
+				sensivity += 3;
+
+				if (sensitiveElement instanceof HTMLMediaElement && !sensitiveElement.ended) {
+					if (!sensitiveElement.paused) sensivity += 1;
+					if (sensitiveElement.currentTime > 0) sensivity += 1;
+				}
+			}
+
+			let current: ReadonlyNode<Element> | null = sensitiveElement;
+			while (current) {
+				this.sensivityMap.set(current, (this.sensivityMap.get(current) || 0) + sensivity);
+				if (current === node) break;
+				current = current.parentElement;
+			}
+		}
+	}
+
+	// For each node with an ID, push that ID into the IdSet on the IdMap, for each of its parent elements.
+	private populateIdSets(node: ReadonlyNode<ParentNode>): void {
+		const elementsWithIds = node.querySelectorAll("[id]");
+
+		for (const elementWithId of elementsWithIds) {
+			const id = elementWithId.id;
+
+			// Ignore empty IDs
+			if (id === "") continue;
+
+			let current: ReadonlyNode<Element> | null = elementWithId;
+
+			while (current) {
+				const idSet: IdSet | undefined = this.idMap.get(current);
+				idSet ? idSet.add(id) : this.idMap.set(current, new Set([id]));
+				if (current === node) break;
+				current = current.parentElement;
+			}
+		}
+	}
+
+	// This is where we actually morph the nodes. The `morph` function (above) exists only to set up the `idMap`.
+	private morphNode(node: ChildNode, ref: ReadonlyNode<ChildNode>): void {
+		if (!(this.context.beforeNodeMorphed?.({ node, referenceNode: ref as ChildNode }) ?? true)) return;
+
+		if (isElement(node) && isElement(ref) && node.tagName === ref.tagName) {
+			if (node.hasAttributes() || ref.hasAttributes()) this.morphAttributes(node, ref);
+			if (isHead(node) && isHead(ref)) {
+				const refChildNodes: Map<string, ReadonlyNode<Element>> = new Map();
+				for (const child of ref.children) refChildNodes.set(child.outerHTML, child);
+				for (const child of node.children) {
+					const key = child.outerHTML;
+					const refChild = refChildNodes.get(key);
+					refChild ? refChildNodes.delete(key) : removeNode(child, this.context);
+				}
+				for (const refChild of refChildNodes.values()) appendChild(node, refChild.cloneNode(true), this.context);
+			} else if (node.hasChildNodes() || ref.hasChildNodes()) this.morphChildNodes(node, ref);
 		} else {
-			sensivity += 3;
+			if (isText(node) && isText(ref)) {
+				this.updateProperty(node, "textContent", ref.textContent);
+			} else if (isComment(node) && isComment(ref)) {
+				this.updateProperty(node, "nodeValue", ref.nodeValue);
+			} else replaceNode(node, ref.cloneNode(true), this.context);
+		}
 
-			if (sensitiveElement instanceof HTMLMediaElement && !sensitiveElement.ended) {
-				if (!sensitiveElement.paused) sensivity += 1;
-				if (sensitiveElement.currentTime > 0) sensivity += 1;
+		this.context.afterNodeMorphed?.({ node });
+	}
+
+	private morphAttributes(element: Element, ref: ReadonlyNode<Element>): void {
+		// Remove any excess attributes from the element that aren’t present in the reference.
+		for (const { name, value } of element.attributes) {
+			if (
+				!ref.hasAttribute(name) &&
+				(this.context.beforeAttributeUpdated?.({ element, attributeName: name, newValue: null }) ?? true)
+			) {
+				element.removeAttribute(name);
+				this.context.afterAttributeUpdated?.({ element, attributeName: name, previousValue: value });
 			}
 		}
 
-		let current: ReadonlyNode<Element> | null = sensitiveElement;
-		while (current) {
-			sensivityMap.set(current, (sensivityMap.get(current) || 0) + sensivity);
-			if (current === node) break;
-			current = current.parentElement;
-		}
-	}
-}
-
-// For each node with an ID, push that ID into the IdSet on the IdMap, for each of its parent elements.
-function populateIdSets(node: ReadonlyNode<ParentNode>, idMap: IdMap): void {
-	const elementsWithIds = node.querySelectorAll("[id]");
-
-	for (const elementWithId of elementsWithIds) {
-		const id = elementWithId.id;
-
-		// Ignore empty IDs
-		if (id === "") continue;
-
-		let current: ReadonlyNode<Element> | null = elementWithId;
-
-		while (current) {
-			const idSet: IdSet | undefined = idMap.get(current);
-			idSet ? idSet.add(id) : idMap.set(current, new Set([id]));
-			if (current === node) break;
-			current = current.parentElement;
-		}
-	}
-}
-
-// This is where we actually morph the nodes. The `morph` function (above) exists only to set up the `idMap`.
-function morphNode(node: ChildNode, ref: ReadonlyNode<ChildNode>, context: Context): void {
-	if (!(context.beforeNodeMorphed?.({ node, referenceNode: ref as ChildNode }) ?? true)) return;
-
-	if (isElement(node) && isElement(ref) && node.tagName === ref.tagName) {
-		if (node.hasAttributes() || ref.hasAttributes()) morphAttributes(node, ref, context);
-		if (isHead(node) && isHead(ref)) {
-			const refChildNodes: Map<string, ReadonlyNode<Element>> = new Map();
-			for (const child of ref.children) refChildNodes.set(child.outerHTML, child);
-			for (const child of node.children) {
-				const key = child.outerHTML;
-				const refChild = refChildNodes.get(key);
-				refChild ? refChildNodes.delete(key) : removeNode(child, context);
+		// Copy attributes from the reference to the element, if they don’t already match.
+		for (const { name, value } of ref.attributes) {
+			const previousValue = element.getAttribute(name);
+			if (
+				previousValue !== value &&
+				(this.context.beforeAttributeUpdated?.({ element, attributeName: name, newValue: value }) ?? true)
+			) {
+				element.setAttribute(name, value);
+				this.context.afterAttributeUpdated?.({ element, attributeName: name, previousValue });
 			}
-			for (const refChild of refChildNodes.values()) appendChild(node, refChild.cloneNode(true), context);
-		} else if (node.hasChildNodes() || ref.hasChildNodes()) morphChildNodes(node, ref, context);
-	} else {
-		if (isText(node) && isText(ref)) {
-			updateProperty(node, "textContent", ref.textContent, context);
-		} else if (isComment(node) && isComment(ref)) {
-			updateProperty(node, "nodeValue", ref.nodeValue, context);
-		} else replaceNode(node, ref.cloneNode(true), context);
-	}
+		}
 
-	context.afterNodeMorphed?.({ node });
-}
+		// For certain types of elements, we need to do some extra work to ensure
+		// the element’s state matches the reference elements’ state.
+		if (isInput(element) && isInput(ref)) {
+			this.updateProperty(element, "checked", ref.checked);
+			this.updateProperty(element, "disabled", ref.disabled);
+			this.updateProperty(element, "indeterminate", ref.indeterminate);
+			if (
+				element.type !== "file" &&
+				!(this.context.ignoreActiveValue && document.activeElement === element) &&
+				!(this.context.preserveModifiedValues && element.value !== element.defaultValue)
+			)
+				this.updateProperty(element, "value", ref.value);
+		} else if (isOption(element) && isOption(ref)) this.updateProperty(element, "selected", ref.selected);
+		else if (isTextArea(element) && isTextArea(ref)) {
+			this.updateProperty(element, "value", ref.value);
 
-function morphAttributes(element: Element, ref: ReadonlyNode<Element>, context: Context): void {
-	// Remove any excess attributes from the element that aren’t present in the reference.
-	for (const { name, value } of element.attributes) {
-		if (!ref.hasAttribute(name) && (context.beforeAttributeUpdated?.({ element, attributeName: name, newValue: null }) ?? true)) {
-			element.removeAttribute(name);
-			context.afterAttributeUpdated?.({ element, attributeName: name, previousValue: value });
+			// TODO: Do we need this? If so, how do we integrate with the callback?
+			const text = element.firstChild;
+			if (text && isText(text)) this.updateProperty(text, "textContent", ref.value);
 		}
 	}
 
-	// Copy attributes from the reference to the element, if they don’t already match.
-	for (const { name, value } of ref.attributes) {
-		const previousValue = element.getAttribute(name);
-		if (
-			previousValue !== value &&
-			(context.beforeAttributeUpdated?.({ element, attributeName: name, newValue: value }) ?? true)
-		) {
-			element.setAttribute(name, value);
-			context.afterAttributeUpdated?.({ element, attributeName: name, previousValue });
-		}
-	}
+	// Iterates over the child nodes of the reference element, morphing the main element’s child nodes to match.
+	private morphChildNodes(element: Element, ref: ReadonlyNode<Element>): void {
+		const childNodes = element.childNodes;
+		const refChildNodes = ref.childNodes;
 
-	// For certain types of elements, we need to do some extra work to ensure
-	// the element’s state matches the reference elements’ state.
-	if (isInput(element) && isInput(ref)) {
-		updateProperty(element, "checked", ref.checked, context);
-		updateProperty(element, "disabled", ref.disabled, context);
-		updateProperty(element, "indeterminate", ref.indeterminate, context);
-		if (
-			element.type !== "file" &&
-			!(context.ignoreActiveValue && document.activeElement === element) &&
-			!(context.preserveModifiedValues && element.value !== element.defaultValue)
-		)
-			updateProperty(element, "value", ref.value, context);
-	} else if (isOption(element) && isOption(ref)) updateProperty(element, "selected", ref.selected, context);
-	else if (isTextArea(element) && isTextArea(ref)) {
-		updateProperty(element, "value", ref.value, context);
+		for (let i = 0; i < refChildNodes.length; i++) {
+			const child = childNodes[i] as ChildNode | null;
+			const refChild = refChildNodes[i]; //as ReadonlyNode<ChildNode> | null;
 
-		// TODO: Do we need this? If so, how do we integrate with the callback?
-		const text = element.firstChild;
-		if (text && isText(text)) updateProperty(text, "textContent", ref.value, context);
-	}
-}
-
-// Iterates over the child nodes of the reference element, morphing the main element’s child nodes to match.
-function morphChildNodes(element: Element, ref: ReadonlyNode<Element>, context: Context): void {
-	const childNodes = element.childNodes;
-	const refChildNodes = ref.childNodes;
-
-	for (let i = 0; i < refChildNodes.length; i++) {
-		const child = childNodes[i] as ChildNode | null;
-		const refChild = refChildNodes[i]; //as ReadonlyNode<ChildNode> | null;
-
-		if (child && refChild) {
-			if (isElement(child) && isElement(refChild)) morphChildElement(child, refChild, element, context);
-			else morphNode(child, refChild, context);
-		} else if (refChild) {
-			appendChild(element, refChild.cloneNode(true), context);
-		} else if (child) {
-			removeNode(child, context);
-		}
-	}
-
-	// Clean up any excess nodes that may be left over
-	while (childNodes.length > refChildNodes.length) {
-		const child = element.lastChild;
-		if (child) removeNode(child, context);
-	}
-}
-
-function updateProperty<N extends Node, P extends keyof N>(node: N, propertyName: P, newValue: N[P], context: Context): void {
-	const previousValue = node[propertyName];
-	if (previousValue !== newValue && (context.beforePropertyUpdated?.({ node, propertyName, newValue }) ?? true)) {
-		node[propertyName] = newValue;
-		context.afterPropertyUpdated?.({ node, propertyName, previousValue });
-	}
-}
-
-function morphChildElement(child: Element, ref: ReadonlyNode<Element>, parent: Element, context: Context): void {
-	const refIdSet = context.idMap.get(ref);
-
-	// Generate the array in advance of the loop
-	const refSetArray = refIdSet ? [...refIdSet] : [];
-
-	let currentNode: ChildNode | null = child;
-	let nextMatchByTagName: ChildNode | null = null;
-
-	// Try find a match by idSet, while also looking out for the next best match by tagName.
-	while (currentNode) {
-		if (isElement(currentNode)) {
-			const id = currentNode.id;
-
-			if (!nextMatchByTagName && currentNode.tagName === ref.tagName) {
-				nextMatchByTagName = currentNode;
+			if (child && refChild) {
+				if (isElement(child) && isElement(refChild)) this.morphChildElement(child, refChild, element);
+				else this.morphNode(child, refChild);
+			} else if (refChild) {
+				appendChild(element, refChild.cloneNode(true), this.context);
+			} else if (child) {
+				removeNode(child, this.context);
 			}
+		}
 
-			if (id !== "") {
-				if (id === ref.id) {
-					insertBefore(parent, currentNode, child, context);
-					return morphNode(currentNode, ref, context);
-				} else {
-					const currentIdSet = context.idMap.get(currentNode);
+		// Clean up any excess nodes that may be left over
+		while (childNodes.length > refChildNodes.length) {
+			const child = element.lastChild;
+			if (child) removeNode(child, this.context);
+		}
+	}
 
-					if (currentIdSet && refSetArray.some((it) => currentIdSet.has(it))) {
-						insertBefore(parent, currentNode, child, context);
-						return morphNode(currentNode, ref, context);
+	private morphChildElement(child: Element, ref: ReadonlyNode<Element>, parent: Element): void {
+		const refIdSet = this.context.idMap.get(ref);
+
+		// Generate the array in advance of the loop
+		const refSetArray = refIdSet ? [...refIdSet] : [];
+
+		let currentNode: ChildNode | null = child;
+		let nextMatchByTagName: ChildNode | null = null;
+
+		// Try find a match by idSet, while also looking out for the next best match by tagName.
+		while (currentNode) {
+			if (isElement(currentNode)) {
+				const id = currentNode.id;
+
+				if (!nextMatchByTagName && currentNode.tagName === ref.tagName) {
+					nextMatchByTagName = currentNode;
+				}
+
+				if (id !== "") {
+					if (id === ref.id) {
+						insertBefore(parent, currentNode, child, this.context);
+						return this.morphNode(currentNode, ref);
+					} else {
+						const currentIdSet = this.context.idMap.get(currentNode);
+
+						if (currentIdSet && refSetArray.some((it) => currentIdSet.has(it))) {
+							insertBefore(parent, currentNode, child, this.context);
+							return this.morphNode(currentNode, ref);
+						}
 					}
 				}
 			}
+
+			currentNode = currentNode.nextSibling;
 		}
 
-		currentNode = currentNode.nextSibling;
+		if (nextMatchByTagName) {
+			insertBefore(parent, nextMatchByTagName, child, this.context);
+			this.morphNode(nextMatchByTagName, ref);
+		} else {
+			// TODO: this is missing an added callback
+			insertBefore(parent, ref.cloneNode(true), child, this.context);
+		}
 	}
 
-	if (nextMatchByTagName) {
-		insertBefore(parent, nextMatchByTagName, child, context);
-		morphNode(nextMatchByTagName, ref, context);
-	} else {
-		// TODO: this is missing an added callback
-		insertBefore(parent, ref.cloneNode(true), child, context);
+	private updateProperty<N extends Node, P extends keyof N>(node: N, propertyName: P, newValue: N[P]): void {
+		const previousValue = node[propertyName];
+		if (previousValue !== newValue && (this.context.beforePropertyUpdated?.({ node, propertyName, newValue }) ?? true)) {
+			node[propertyName] = newValue;
+			this.context.afterPropertyUpdated?.({ node, propertyName, previousValue });
+		}
 	}
 }
 
