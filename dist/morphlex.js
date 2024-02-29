@@ -19,10 +19,6 @@ class Morph {
 		}
 		this.#morphNode(node, readonlyReference);
 	}
-	// TODO: Get rid of this
-	get context() {
-		return { ...this.#options, idMap: this.#idMap, sensitivityMap: this.#sensivityMap };
-	}
 	#populateSensivityMap(node) {
 		const sensitiveElements = node.querySelectorAll("iframe,video,object,embed,audio,input,textarea,canvas");
 		for (const sensitiveElement of sensitiveElements) {

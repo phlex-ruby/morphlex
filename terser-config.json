@@ -1,9 +1,5 @@
 {
-	"compress": true,
-	"mangle": {
-		"properties": {
-			"regex": "^_"
-		}
-	},
-	"module": true
+	"mangle": true,
+	"module": true,
+	"compress": true
 }

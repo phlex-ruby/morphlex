@@ -83,8 +83,6 @@ export interface Options {
 	}) => void;
 }
 
-type Context = Options & { idMap: IdMap; sensitivityMap: SensivityMap };
-
 export function morph(node: ChildNode, reference: ChildNode, options: Options = {}): void {
 	new Morph(options).morph(node, reference);
 }
@@ -110,11 +108,6 @@ class Morph {
 		}
 
 		this.#morphNode(node, readonlyReference);
-	}
-
-	// TODO: Get rid of this
-	get context(): Context {
-		return { ...this.#options, idMap: this.#idMap, sensitivityMap: this.#sensivityMap };
 	}
 
 	#populateSensivityMap(node: ReadonlyNode<ParentNode>): void {
