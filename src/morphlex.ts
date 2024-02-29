@@ -168,7 +168,7 @@ class Morph {
 
 	// This is where we actually morph the nodes. The `morph` function (above) exists only to set up the `idMap`.
 	private morphNode(node: ChildNode, ref: ReadonlyNode<ChildNode>): void {
-		if (!(this.context.beforeNodeMorphed?.({ node, referenceNode: ref as ChildNode }) ?? true)) return;
+		if (!(this.options.beforeNodeMorphed?.({ node, referenceNode: ref as ChildNode }) ?? true)) return;
 
 		if (isElement(node) && isElement(ref) && node.tagName === ref.tagName) {
 			if (node.hasAttributes() || ref.hasAttributes()) this.morphAttributes(node, ref);
@@ -178,19 +178,19 @@ class Morph {
 				for (const child of node.children) {
 					const key = child.outerHTML;
 					const refChild = refChildNodes.get(key);
-					refChild ? refChildNodes.delete(key) : removeNode(child, this.context);
+					refChild ? refChildNodes.delete(key) : this.removeNode(child);
 				}
-				for (const refChild of refChildNodes.values()) appendChild(node, refChild.cloneNode(true), this.context);
+				for (const refChild of refChildNodes.values()) this.appendChild(node, refChild.cloneNode(true));
 			} else if (node.hasChildNodes() || ref.hasChildNodes()) this.morphChildNodes(node, ref);
 		} else {
 			if (isText(node) && isText(ref)) {
 				this.updateProperty(node, "textContent", ref.textContent);
 			} else if (isComment(node) && isComment(ref)) {
 				this.updateProperty(node, "nodeValue", ref.nodeValue);
-			} else replaceNode(node, ref.cloneNode(true), this.context);
+			} else this.replaceNode(node, ref.cloneNode(true));
 		}
 
-		this.context.afterNodeMorphed?.({ node });
+		this.options.afterNodeMorphed?.({ node });
 	}
 
 	private morphAttributes(element: Element, ref: ReadonlyNode<Element>): void {
@@ -198,10 +198,10 @@ class Morph {
 		for (const { name, value } of element.attributes) {
 			if (
 				!ref.hasAttribute(name) &&
-				(this.context.beforeAttributeUpdated?.({ element, attributeName: name, newValue: null }) ?? true)
+				(this.options.beforeAttributeUpdated?.({ element, attributeName: name, newValue: null }) ?? true)
 			) {
 				element.removeAttribute(name);
-				this.context.afterAttributeUpdated?.({ element, attributeName: name, previousValue: value });
+				this.options.afterAttributeUpdated?.({ element, attributeName: name, previousValue: value });
 			}
 		}
 
@@ -210,10 +210,10 @@ class Morph {
 			const previousValue = element.getAttribute(name);
 			if (
 				previousValue !== value &&
-				(this.context.beforeAttributeUpdated?.({ element, attributeName: name, newValue: value }) ?? true)
+				(this.options.beforeAttributeUpdated?.({ element, attributeName: name, newValue: value }) ?? true)
 			) {
 				element.setAttribute(name, value);
-				this.context.afterAttributeUpdated?.({ element, attributeName: name, previousValue });
+				this.options.afterAttributeUpdated?.({ element, attributeName: name, previousValue });
 			}
 		}
 
@@ -225,8 +225,8 @@ class Morph {
 			this.updateProperty(element, "indeterminate", ref.indeterminate);
 			if (
 				element.type !== "file" &&
-				!(this.context.ignoreActiveValue && document.activeElement === element) &&
-				!(this.context.preserveModifiedValues && element.value !== element.defaultValue)
+				!(this.options.ignoreActiveValue && document.activeElement === element) &&
+				!(this.options.preserveModifiedValues && element.value !== element.defaultValue)
 			)
 				this.updateProperty(element, "value", ref.value);
 		} else if (isOption(element) && isOption(ref)) this.updateProperty(element, "selected", ref.selected);
@@ -252,21 +252,21 @@ class Morph {
 				if (isElement(child) && isElement(refChild)) this.morphChildElement(child, refChild, element);
 				else this.morphNode(child, refChild);
 			} else if (refChild) {
-				appendChild(element, refChild.cloneNode(true), this.context);
+				this.appendChild(element, refChild.cloneNode(true));
 			} else if (child) {
-				removeNode(child, this.context);
+				this.removeNode(child);
 			}
 		}
 
 		// Clean up any excess nodes that may be left over
 		while (childNodes.length > refChildNodes.length) {
 			const child = element.lastChild;
-			if (child) removeNode(child, this.context);
+			if (child) this.removeNode(child);
 		}
 	}
 
 	private morphChildElement(child: Element, ref: ReadonlyNode<Element>, parent: Element): void {
-		const refIdSet = this.context.idMap.get(ref);
+		const refIdSet = this.idMap.get(ref);
 
 		// Generate the array in advance of the loop
 		const refSetArray = refIdSet ? [...refIdSet] : [];
@@ -285,13 +285,13 @@ class Morph {
 
 				if (id !== "") {
 					if (id === ref.id) {
-						insertBefore(parent, currentNode, child, this.context);
+						this.insertBefore(parent, currentNode, child);
 						return this.morphNode(currentNode, ref);
 					} else {
-						const currentIdSet = this.context.idMap.get(currentNode);
+						const currentIdSet = this.idMap.get(currentNode);
 
 						if (currentIdSet && refSetArray.some((it) => currentIdSet.has(it))) {
-							insertBefore(parent, currentNode, child, this.context);
+							this.insertBefore(parent, currentNode, child);
 							return this.morphNode(currentNode, ref);
 						}
 					}
@@ -302,72 +302,72 @@ class Morph {
 		}
 
 		if (nextMatchByTagName) {
-			insertBefore(parent, nextMatchByTagName, child, this.context);
+			this.insertBefore(parent, nextMatchByTagName, child);
 			this.morphNode(nextMatchByTagName, ref);
 		} else {
 			// TODO: this is missing an added callback
-			insertBefore(parent, ref.cloneNode(true), child, this.context);
+			this.insertBefore(parent, ref.cloneNode(true), child);
 		}
 	}
 
 	private updateProperty<N extends Node, P extends keyof N>(node: N, propertyName: P, newValue: N[P]): void {
 		const previousValue = node[propertyName];
-		if (previousValue !== newValue && (this.context.beforePropertyUpdated?.({ node, propertyName, newValue }) ?? true)) {
+		if (previousValue !== newValue && (this.options.beforePropertyUpdated?.({ node, propertyName, newValue }) ?? true)) {
 			node[propertyName] = newValue;
-			this.context.afterPropertyUpdated?.({ node, propertyName, previousValue });
+			this.options.afterPropertyUpdated?.({ node, propertyName, previousValue });
 		}
 	}
-}
 
-function replaceNode(node: ChildNode, newNode: Node, context: Context): void {
-	if (
-		(context.beforeNodeRemoved?.({ oldNode: node }) ?? true) &&
-		(context.beforeNodeAdded?.({ newNode, parentNode: node.parentNode }) ?? true)
-	) {
-		node.replaceWith(newNode);
-		context.afterNodeAdded?.({ newNode });
-		context.afterNodeRemoved?.({ oldNode: node });
+	private replaceNode(node: ChildNode, newNode: Node): void {
+		if (
+			(this.options.beforeNodeRemoved?.({ oldNode: node }) ?? true) &&
+			(this.options.beforeNodeAdded?.({ newNode, parentNode: node.parentNode }) ?? true)
+		) {
+			node.replaceWith(newNode);
+			this.options.afterNodeAdded?.({ newNode });
+			this.options.afterNodeRemoved?.({ oldNode: node });
+		}
 	}
-}
 
-function insertBefore(parent: ParentNode, node: Node, insertionPoint: ChildNode, context: Context): void {
-	if (node === insertionPoint) return;
+	private insertBefore(parent: ParentNode, node: Node, insertionPoint: ChildNode): void {
+		if (node === insertionPoint) return;
 
-	if (isElement(node)) {
-		const sensitivity = context.sensitivityMap.get(node) ?? 0;
+		if (isElement(node)) {
+			const sensitivity = this.sensivityMap.get(node) ?? 0;
 
-		if (sensitivity > 0) {
-			let previousNode = node.previousSibling;
+			if (sensitivity > 0) {
+				let previousNode = node.previousSibling;
 
-			while (previousNode) {
-				const previousNodeSensitivity = context.sensitivityMap.get(previousNode) ?? 0;
+				while (previousNode) {
+					const previousNodeSensitivity = this.sensivityMap.get(previousNode) ?? 0;
 
-				if (previousNodeSensitivity < sensitivity) {
-					parent.insertBefore(previousNode, node.nextSibling);
+					if (previousNodeSensitivity < sensitivity) {
+						parent.insertBefore(previousNode, node.nextSibling);
 
-					if (previousNode === insertionPoint) return;
-					previousNode = node.previousSibling;
-				} else {
-					break;
+						if (previousNode === insertionPoint) return;
+						previousNode = node.previousSibling;
+					} else {
+						break;
+					}
 				}
 			}
 		}
+
+		parent.insertBefore(node, insertionPoint);
 	}
 
-	parent.insertBefore(node, insertionPoint);
-}
-
-function appendChild(node: ParentNode, newNode: Node, context: Context): void {
-	if (context.beforeNodeAdded?.({ newNode, parentNode: node }) ?? true) {
-		node.appendChild(newNode);
-		context.afterNodeAdded?.({ newNode });
+	private appendChild(node: ParentNode, newNode: Node): void {
+		if (this.options.beforeNodeAdded?.({ newNode, parentNode: node }) ?? true) {
+			node.appendChild(newNode);
+			this.options.afterNodeAdded?.({ newNode });
+		}
 	}
-}
 
-function removeNode(node: ChildNode, context: Context): void {
-	if (context.beforeNodeRemoved?.({ oldNode: node }) ?? true) {
-		node.remove();
-		context.afterNodeRemoved?.({ oldNode: node });
+	private removeNode(node: ChildNode): void {
+		if (this.options.beforeNodeRemoved?.({ oldNode: node }) ?? true) {
+			node.remove();
+			this.options.afterNodeRemoved?.({ oldNode: node });
+		}
 	}
 }
 
