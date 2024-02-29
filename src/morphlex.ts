@@ -1,5 +1,6 @@
 type IdSet = Set<string>;
 type IdMap = WeakMap<ReadonlyNode<Node>, IdSet>;
+type SensivityMap = WeakMap<ReadonlyNode<Node>, number>;
 type ObjectKey = string | number | symbol;
 
 // Maps to a type that can only read properties
@@ -82,18 +83,48 @@ export interface Options {
 	}) => void;
 }
 
-type Context = Options & { idMap: IdMap };
+type Context = Options & { idMap: IdMap; sensitivityMap: SensivityMap };
 
 export function morph(node: ChildNode, reference: ChildNode, options: Options = {}): void {
 	const readonlyReference = reference as ReadonlyNode<ChildNode>;
 	const idMap: IdMap = new WeakMap();
+	const sensitivityMap: SensivityMap = new WeakMap();
 
 	if (isParentNode(node) && isParentNode(readonlyReference)) {
 		populateIdSets(node, idMap);
 		populateIdSets(readonlyReference, idMap);
+		populateSensivityMap(node, sensitivityMap);
 	}
 
-	morphNode(node, readonlyReference, { ...options, idMap });
+	morphNode(node, readonlyReference, { ...options, idMap, sensitivityMap });
+}
+
+function populateSensivityMap(node: ReadonlyNode<ParentNode>, sensivityMap: SensivityMap): void {
+	const sensitiveElements = node.querySelectorAll("iframe,video,object,embed,audio,input,textarea,canvas");
+	for (const sensitiveElement of sensitiveElements) {
+		let sensivity = 0;
+
+		if (isInput(sensitiveElement) || isTextArea(sensitiveElement)) {
+			sensivity += 1;
+
+			if (sensitiveElement.value !== sensitiveElement.defaultValue) sensivity += 1;
+			if (sensitiveElement === document.activeElement) sensivity += 1;
+		} else {
+			sensivity += 3;
+
+			if (sensitiveElement instanceof HTMLMediaElement && !sensitiveElement.ended) {
+				if (!sensitiveElement.paused) sensivity += 1;
+				if (sensitiveElement.currentTime > 0) sensivity += 1;
+			}
+		}
+
+		let current: ReadonlyNode<Element> | null = sensitiveElement;
+		while (current) {
+			sensivityMap.set(current, (sensivityMap.get(current) || 0) + sensivity);
+			if (current === node) break;
+			current = current.parentElement;
+		}
+	}
 }
 
 // For each node with an ID, push that ID into the IdSet on the IdMap, for each of its parent elements.
@@ -111,7 +142,7 @@ function populateIdSets(node: ReadonlyNode<ParentNode>, idMap: IdMap): void {
 		while (current) {
 			const idSet: IdSet | undefined = idMap.get(current);
 			idSet ? idSet.add(id) : idMap.set(current, new Set([id]));
-			if (current === elementWithId) break;
+			if (current === node) break;
 			current = current.parentElement;
 		}
 	}
@@ -241,13 +272,13 @@ function morphChildElement(child: Element, ref: ReadonlyNode<Element>, parent: E
 
 			if (id !== "") {
 				if (id === ref.id) {
-					insertBefore(parent, currentNode, child);
+					insertBefore(parent, currentNode, child, context);
 					return morphNode(currentNode, ref, context);
 				} else {
 					const currentIdSet = context.idMap.get(currentNode);
 
 					if (currentIdSet && refSetArray.some((it) => currentIdSet.has(it))) {
-						insertBefore(parent, currentNode, child);
+						insertBefore(parent, currentNode, child, context);
 						return morphNode(currentNode, ref, context);
 					}
 				}
@@ -258,11 +289,11 @@ function morphChildElement(child: Element, ref: ReadonlyNode<Element>, parent: E
 	}
 
 	if (nextMatchByTagName) {
-		insertBefore(parent, nextMatchByTagName, child);
+		insertBefore(parent, nextMatchByTagName, child, context);
 		morphNode(nextMatchByTagName, ref, context);
 	} else {
 		// TODO: this is missing an added callback
-		insertBefore(parent, ref.cloneNode(true), child);
+		insertBefore(parent, ref.cloneNode(true), child, context);
 	}
 }
 
@@ -277,17 +308,17 @@ function replaceNode(node: ChildNode, newNode: Node, context: Context): void {
 	}
 }
 
-function insertBefore(parent: ParentNode, node: Node, insertionPoint: ChildNode): void {
+function insertBefore(parent: ParentNode, node: Node, insertionPoint: ChildNode, context: Context): void {
 	if (node === insertionPoint) return;
 
 	if (isElement(node)) {
-		const sensitivity = nodeSensitivity(node);
+		const sensitivity = context.sensitivityMap.get(node) ?? 0;
 
 		if (sensitivity > 0) {
 			let previousNode = node.previousSibling;
 
 			while (previousNode) {
-				const previousNodeSensitivity = nodeSensitivity(previousNode);
+				const previousNodeSensitivity = context.sensitivityMap.get(previousNode) ?? 0;
 
 				if (previousNodeSensitivity < sensitivity) {
 					parent.insertBefore(previousNode, node.nextSibling);
@@ -302,34 +333,6 @@ function insertBefore(parent: ParentNode, node: Node, insertionPoint: ChildNode)
 	}
 
 	parent.insertBefore(node, insertionPoint);
-}
-
-const sensitiveElements = new Set(["iframe", "audio", "video", "embed", "object", "canvas"]);
-const inputElements = new Set(["input", "select", "textarea"]);
-
-function nodeSensitivity(node: Node): number {
-	let sensitivity = 0;
-	if (!isElement(node)) return sensitivity;
-
-	const localName = node.localName;
-
-	if (inputElements.has(localName) || node.getAttribute("contenteditable")) {
-		sensitivity += 1;
-
-		if (node === document.activeElement) sensitivity += 1;
-		if (node instanceof HTMLInputElement && node.value !== node.defaultValue) sensitivity += 1;
-	}
-
-	if (sensitiveElements.has(localName)) {
-		sensitivity += 3;
-
-		if (node instanceof HTMLMediaElement && !node.ended) {
-			if (!node.paused) sensitivity += 1;
-			if (node.currentTime > 0) sensitivity += 1;
-		}
-	}
-
-	return sensitivity;
 }
 
 function appendChild(node: ParentNode, newNode: Node, context: Context): void {

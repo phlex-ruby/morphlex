@@ -1,11 +1,36 @@
 export function morph(node, reference, options = {}) {
 	const readonlyReference = reference;
 	const idMap = new WeakMap();
+	const sensitivityMap = new WeakMap();
 	if (isParentNode(node) && isParentNode(readonlyReference)) {
 		populateIdSets(node, idMap);
 		populateIdSets(readonlyReference, idMap);
+		populateSensivityMap(node, sensitivityMap);
 	}
-	morphNode(node, readonlyReference, { ...options, idMap });
+	morphNode(node, readonlyReference, { ...options, idMap, sensitivityMap });
+}
+function populateSensivityMap(node, sensivityMap) {
+	const sensitiveElements = node.querySelectorAll("iframe,video,object,embed,audio,input,textarea,canvas");
+	for (const sensitiveElement of sensitiveElements) {
+		let sensivity = 0;
+		if (isInput(sensitiveElement) || isTextArea(sensitiveElement)) {
+			sensivity += 1;
+			if (sensitiveElement.value !== sensitiveElement.defaultValue) sensivity += 1;
+			if (sensitiveElement === document.activeElement) sensivity += 1;
+		} else {
+			sensivity += 3;
+			if (sensitiveElement instanceof HTMLMediaElement && !sensitiveElement.ended) {
+				if (!sensitiveElement.paused) sensivity += 1;
+				if (sensitiveElement.currentTime > 0) sensivity += 1;
+			}
+		}
+		let current = sensitiveElement;
+		while (current) {
+			sensivityMap.set(current, (sensivityMap.get(current) || 0) + sensivity);
+			if (current === node) break;
+			current = current.parentElement;
+		}
+	}
 }
 // For each node with an ID, push that ID into the IdSet on the IdMap, for each of its parent elements.
 function populateIdSets(node, idMap) {
@@ -18,7 +43,7 @@ function populateIdSets(node, idMap) {
 		while (current) {
 			const idSet = idMap.get(current);
 			idSet ? idSet.add(id) : idMap.set(current, new Set([id]));
-			if (current === elementWithId) break;
+			if (current === node) break;
 			current = current.parentElement;
 		}
 	}
@@ -130,12 +155,12 @@ function morphChildElement(child, ref, parent, context) {
 			}
 			if (id !== "") {
 				if (id === ref.id) {
-					insertBefore(parent, currentNode, child);
+					insertBefore(parent, currentNode, child, context);
 					return morphNode(currentNode, ref, context);
 				} else {
 					const currentIdSet = context.idMap.get(currentNode);
 					if (currentIdSet && refSetArray.some((it) => currentIdSet.has(it))) {
-						insertBefore(parent, currentNode, child);
+						insertBefore(parent, currentNode, child, context);
 						return morphNode(currentNode, ref, context);
 					}
 				}
@@ -144,12 +169,11 @@ function morphChildElement(child, ref, parent, context) {
 		currentNode = currentNode.nextSibling;
 	}
 	if (nextMatchByTagName) {
-		insertBefore(parent, nextMatchByTagName, child);
+		insertBefore(parent, nextMatchByTagName, child, context);
 		morphNode(nextMatchByTagName, ref, context);
 	} else {
-		// TODO: this is missing an inserted callback
-		// TODO: we'll need to clean up the list again after this
-		insertBefore(parent, ref.cloneNode(true), child);
+		// TODO: this is missing an added callback
+		insertBefore(parent, ref.cloneNode(true), child, context);
 	}
 }
 function replaceNode(node, newNode, context) {
@@ -162,14 +186,14 @@ function replaceNode(node, newNode, context) {
 		context.afterNodeRemoved?.({ oldNode: node });
 	}
 }
-function insertBefore(parent, node, insertionPoint) {
+function insertBefore(parent, node, insertionPoint, context) {
 	if (node === insertionPoint) return;
 	if (isElement(node)) {
-		const sensitivity = nodeSensitivity(node);
+		const sensitivity = context.sensitivityMap.get(node) ?? 0;
 		if (sensitivity > 0) {
 			let previousNode = node.previousSibling;
 			while (previousNode) {
-				const previousNodeSensitivity = nodeSensitivity(previousNode);
+				const previousNodeSensitivity = context.sensitivityMap.get(previousNode) ?? 0;
 				if (previousNodeSensitivity < sensitivity) {
 					parent.insertBefore(previousNode, node.nextSibling);
 					if (previousNode === insertionPoint) return;
@@ -181,26 +205,6 @@ function insertBefore(parent, node, insertionPoint) {
 		}
 	}
 	parent.insertBefore(node, insertionPoint);
-}
-const sensitiveElements = new Set(["iframe", "audio", "video", "embed", "object", "canvas"]);
-const inputElements = new Set(["input", "select", "textarea"]);
-function nodeSensitivity(node) {
-	let sensitivity = 0;
-	if (!isElement(node)) return sensitivity;
-	const localName = node.localName;
-	if (inputElements.has(localName) || node.getAttribute("contenteditable")) {
-		sensitivity += 1;
-		if (node === document.activeElement) sensitivity += 1;
-		if (node instanceof HTMLInputElement && node.value !== node.defaultValue) sensitivity += 1;
-	}
-	if (sensitiveElements.has(localName)) {
-		sensitivity += 3;
-		if (node instanceof HTMLMediaElement && !node.ended) {
-			if (!node.paused) sensitivity += 1;
-			if (node.currentTime > 0) sensitivity += 1;
-		}
-	}
-	return sensitivity;
 }
 function appendChild(node, newNode, context) {
 	if (context.beforeNodeAdded?.({ newNode, parentNode: node }) ?? true) {
