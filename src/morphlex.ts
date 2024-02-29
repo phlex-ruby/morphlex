@@ -226,7 +226,6 @@ class Morph {
 		else if (isTextArea(element) && isTextArea(ref)) {
 			this.#updateProperty(element, "value", ref.value);
 
-			// TODO: Do we need this? If so, how do we integrate with the callback?
 			const text = element.firstChild;
 			if (text && isText(text)) this.#updateProperty(text, "textContent", ref.value);
 		}
@@ -298,8 +297,11 @@ class Morph {
 			this.#insertBefore(parent, nextMatchByTagName, child);
 			this.#morphNode(nextMatchByTagName, ref);
 		} else {
-			// TODO: this is missing an added callback
-			this.#insertBefore(parent, ref.cloneNode(true), child);
+			const newNode = ref.cloneNode(true);
+			if (this.#options.beforeNodeAdded?.({ newNode, parentNode: parent }) ?? true) {
+				this.#insertBefore(parent, newNode, child);
+				this.#options.afterNodeAdded?.({ newNode });
+			}
 		}
 	}
 
