@@ -88,9 +88,9 @@ export function morph(node: ChildNode, reference: ChildNode, options: Options = 
 }
 
 class Morph {
+	readonly #options: Options;
 	readonly #idMap: IdMap;
 	readonly #sensivityMap: SensivityMap;
-	readonly #options: Options;
 
 	constructor(options: Options = {}) {
 		this.#options = options;
