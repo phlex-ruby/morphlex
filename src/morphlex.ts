@@ -102,15 +102,15 @@ class Morph {
 		const readonlyReference = reference as ReadonlyNode<ChildNode>;
 
 		if (isParentNode(node) && isParentNode(readonlyReference)) {
-			this.#populateIdSets(node);
-			this.#populateIdSets(readonlyReference);
-			this.#populateSensivityMap(node);
+			this.#mapIdSets(node);
+			this.#mapIdSets(readonlyReference);
+			this.#mapSensivity(node);
 		}
 
 		this.#morphNode(node, readonlyReference);
 	}
 
-	#populateSensivityMap(node: ReadonlyNode<ParentNode>): void {
+	#mapSensivity(node: ReadonlyNode<ParentNode>): void {
 		const sensitiveElements = node.querySelectorAll("audio,canvas,embed,iframe,input,object,textarea,video");
 		for (const sensitiveElement of sensitiveElements) {
 			let sensivity = 0;
@@ -139,7 +139,7 @@ class Morph {
 	}
 
 	// For each node with an ID, push that ID into the IdSet on the IdMap, for each of its parent elements.
-	#populateIdSets(node: ReadonlyNode<ParentNode>): void {
+	#mapIdSets(node: ReadonlyNode<ParentNode>): void {
 		const elementsWithIds = node.querySelectorAll("[id]");
 
 		for (const elementWithId of elementsWithIds) {
