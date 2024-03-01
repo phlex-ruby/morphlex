@@ -1,18 +1,21 @@
 # Morphlex
 
-Morphlex is a tiny, safe, optimal DOM morphing library written in TypeScript. It uses IdSets, inspired by [Idiomorph](https://github.com/bigskysoftware/idiomorph).
+Morphlex is a tiny, safe, optimal DOM morphing library written in TypeScript.
 
-## Why are we doing this?
+> [!WARNING]
+> Morphlex is currently in development and it not yet ready for production use.
 
-We were massively impressed by what HTMZ made possible in just 166 bytes, and we think there’s huge potential combining the HTMZ iframe proxy technique with a tiny DOM morphing function. Our goal is to combine this into a new powerful way to build web applications.
+## ID Sets
 
-There are three parts:
+Inspired by Idiomorph, Morphlex uses ID Sets to match nodes with deeply nested identified elements.
 
-1. iframe proxies for `prepend`, `append`, `morph` and `replace` operations, targeted by normal HTML links and forms;
-2. a tiny DOM morphing function that can handle complex cases;
-3. a protocol for requesting the server return a specific fragment of a view by DOM id.
+## Node sensitivity
 
-Initially, we will build support for rendering fragments into [phlex](https://github.com/phlex-ruby/phlex) and [phlex-rails](https://github.com/phlex-ruby/phlex-rails).
+Morphlex will give priority to sensitive elements such as iframes, media players, and form inputs, forcing less sensitive elements to move around them. This works in any direction even if the sensitive element is deeply nested.
+
+## Streaming morph [WIP]
+
+Because the Morphlex algorithm works depth-first, sequentially through reference DOM, it should be able to consume a stream of reference nodes, morphing the DOM in real-time. This feature is not yet implemented.
 
 ## Usage
 
