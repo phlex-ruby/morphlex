@@ -111,7 +111,7 @@ class Morph {
 	}
 
 	#populateSensivityMap(node: ReadonlyNode<ParentNode>): void {
-		const sensitiveElements = node.querySelectorAll("iframe,video,object,embed,audio,input,textarea,canvas");
+		const sensitiveElements = node.querySelectorAll("audio,canvas,embed,iframe,input,object,textarea,video");
 		for (const sensitiveElement of sensitiveElements) {
 			let sensivity = 0;
 
