@@ -123,7 +123,7 @@ class Morph {
 			} else {
 				sensivity += 3;
 
-				if (sensitiveElement instanceof HTMLMediaElement && !sensitiveElement.ended) {
+				if (isMedia(sensitiveElement) && !sensitiveElement.ended) {
 					if (!sensitiveElement.paused) sensivity += 1;
 					if (sensitiveElement.currentTime > 0) sensivity += 1;
 				}
@@ -386,6 +386,12 @@ function isElement(node: Node): node is Element;
 function isElement(node: ReadonlyNode<Node>): node is ReadonlyNode<Element>;
 function isElement(node: Node | ReadonlyNode<Node>): boolean {
 	return node.nodeType === 1;
+}
+
+function isMedia(element: Element): element is HTMLMediaElement;
+function isMedia(element: ReadonlyNode<Element>): element is ReadonlyNode<HTMLMediaElement>;
+function isMedia(element: Element | ReadonlyNode<Element>): boolean {
+	return element.localName === "video" || element.localName === "audio";
 }
 
 function isInput(element: Element): element is HTMLInputElement;

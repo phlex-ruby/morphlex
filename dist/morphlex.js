@@ -29,7 +29,7 @@ class Morph {
 				if (sensitiveElement === document.activeElement) sensivity += 1;
 			} else {
 				sensivity += 3;
-				if (sensitiveElement instanceof HTMLMediaElement && !sensitiveElement.ended) {
+				if (isMedia(sensitiveElement) && !sensitiveElement.ended) {
 					if (!sensitiveElement.paused) sensivity += 1;
 					if (sensitiveElement.currentTime > 0) sensivity += 1;
 				}
@@ -242,6 +242,9 @@ function isComment(node) {
 }
 function isElement(node) {
 	return node.nodeType === 1;
+}
+function isMedia(element) {
+	return element.localName === "video" || element.localName === "audio";
 }
 function isInput(element) {
 	return element.localName === "input";
