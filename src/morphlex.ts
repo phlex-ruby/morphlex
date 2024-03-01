@@ -88,9 +88,9 @@ export function morph(node: ChildNode, reference: ChildNode, options: Options = 
 }
 
 class Morph {
+	readonly #options: Options;
 	readonly #idMap: IdMap;
 	readonly #sensivityMap: SensivityMap;
-	readonly #options: Options;
 
 	constructor(options: Options = {}) {
 		this.#options = options;
@@ -102,16 +102,16 @@ class Morph {
 		const readonlyReference = reference as ReadonlyNode<ChildNode>;
 
 		if (isParentNode(node) && isParentNode(readonlyReference)) {
-			this.#populateIdSets(node);
-			this.#populateIdSets(readonlyReference);
-			this.#populateSensivityMap(node);
+			this.#mapIdSets(node);
+			this.#mapIdSets(readonlyReference);
+			this.#mapSensivity(node);
 		}
 
 		this.#morphNode(node, readonlyReference);
 	}
 
-	#populateSensivityMap(node: ReadonlyNode<ParentNode>): void {
-		const sensitiveElements = node.querySelectorAll("iframe,video,object,embed,audio,input,textarea,canvas");
+	#mapSensivity(node: ReadonlyNode<ParentNode>): void {
+		const sensitiveElements = node.querySelectorAll("audio,canvas,embed,iframe,input,object,textarea,video");
 		for (const sensitiveElement of sensitiveElements) {
 			let sensivity = 0;
 
@@ -123,7 +123,7 @@ class Morph {
 			} else {
 				sensivity += 3;
 
-				if (sensitiveElement instanceof HTMLMediaElement && !sensitiveElement.ended) {
+				if (isMedia(sensitiveElement) && !sensitiveElement.ended) {
 					if (!sensitiveElement.paused) sensivity += 1;
 					if (sensitiveElement.currentTime > 0) sensivity += 1;
 				}
@@ -139,7 +139,7 @@ class Morph {
 	}
 
 	// For each node with an ID, push that ID into the IdSet on the IdMap, for each of its parent elements.
-	#populateIdSets(node: ReadonlyNode<ParentNode>): void {
+	#mapIdSets(node: ReadonlyNode<ParentNode>): void {
 		const elementsWithIds = node.querySelectorAll("[id]");
 
 		for (const elementWithId of elementsWithIds) {
@@ -386,6 +386,12 @@ function isElement(node: Node): node is Element;
 function isElement(node: ReadonlyNode<Node>): node is ReadonlyNode<Element>;
 function isElement(node: Node | ReadonlyNode<Node>): boolean {
 	return node.nodeType === 1;
+}
+
+function isMedia(element: Element): element is HTMLMediaElement;
+function isMedia(element: ReadonlyNode<Element>): element is ReadonlyNode<HTMLMediaElement>;
+function isMedia(element: Element | ReadonlyNode<Element>): boolean {
+	return element.localName === "video" || element.localName === "audio";
 }
 
 function isInput(element: Element): element is HTMLInputElement;
