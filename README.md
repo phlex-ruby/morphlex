@@ -15,7 +15,7 @@ Morphlex will give priority to sensitive elements such as iframes, media players
 
 ## Streaming morph [WIP]
 
-Because the Morphlex algorithm works depth-first, sequentially through reference DOM, it should be able to consume a stream of reference nodes, morphing the DOM in real-time. This feature is not yet implemented.
+Because the Morphlex algorithm works depth-first, sequentially through reference DOM, it should be able to consume a stream of reference nodes, morphing the target DOM in real-time. This feature is not yet implemented.
 
 ## Usage
 
