@@ -99,15 +99,13 @@ class Morph {
 	}
 
 	morph(node: ChildNode, reference: ChildNode): void {
-		const readonlyReference = reference as ReadonlyNode<ChildNode>;
-
-		if (isParentNode(node) && isParentNode(readonlyReference)) {
+		if (isParentNode(node) && isParentNode(reference)) {
 			this.#mapIdSets(node);
-			this.#mapIdSets(readonlyReference);
+			this.#mapIdSets(reference);
 			this.#mapSensivity(node);
 		}
 
-		this.#morphNode(node, readonlyReference);
+		this.#morphNode(node, reference);
 	}
 
 	#mapSensivity(node: ReadonlyNode<ParentNode>): void {
@@ -116,16 +114,16 @@ class Morph {
 			let sensivity = 0;
 
 			if (isInput(sensitiveElement) || isTextArea(sensitiveElement)) {
-				sensivity += 1;
+				sensivity++;
 
-				if (sensitiveElement.value !== sensitiveElement.defaultValue) sensivity += 1;
-				if (sensitiveElement === document.activeElement) sensivity += 1;
+				if (sensitiveElement.value !== sensitiveElement.defaultValue) sensivity++;
+				if (sensitiveElement === document.activeElement) sensivity++;
 			} else {
 				sensivity += 3;
 
 				if (isMedia(sensitiveElement) && !sensitiveElement.ended) {
-					if (!sensitiveElement.paused) sensivity += 1;
-					if (sensitiveElement.currentTime > 0) sensivity += 1;
+					if (!sensitiveElement.paused) sensivity++;
+					if (sensitiveElement.currentTime > 0) sensivity++;
 				}
 			}
 
@@ -238,7 +236,7 @@ class Morph {
 
 		for (let i = 0; i < refChildNodes.length; i++) {
 			const child = childNodes[i] as ChildNode | null;
-			const refChild = refChildNodes[i]; //as ReadonlyNode<ChildNode> | null;
+			const refChild = refChildNodes[i] as ReadonlyNode<ChildNode> | null;
 
 			if (child && refChild) {
 				if (isElement(child) && isElement(refChild)) this.#morphChildElement(child, refChild, element);
