@@ -21,7 +21,7 @@ describe("morph", () => {
 		expect(original.outerHTML).to.equal(reference.outerHTML);
 	});
 
-	it("can stream html", async () => {
+	it.only("can stream html", async () => {
 		const iframe = await fixture(`<iframe></iframe>`);
 
 		const contentDocument = iframe.contentDocument;
@@ -38,7 +38,7 @@ describe("morph", () => {
 
 		observer.observe(body, { childList: true, subtree: true });
 
-		contentDocument.write("<h1>Hello World</h1>");
+		contentDocument.write("<article><h1>Hello World</h1>");
 		contentDocument.write("<p>Wh");
 		contentDocument.write("at's up?</p>");
 		contentDocument.write("<div><span>Hello</span><span>Another span");

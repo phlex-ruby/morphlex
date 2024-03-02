@@ -2,25 +2,24 @@ export function morph(node, reference, options = {}) {
 	new Morph(options).morph(node, reference);
 }
 class Morph {
+	#options;
 	#idMap;
 	#sensivityMap;
-	#options;
 	constructor(options = {}) {
 		this.#options = options;
 		this.#idMap = new WeakMap();
 		this.#sensivityMap = new WeakMap();
 	}
 	morph(node, reference) {
-		const readonlyReference = reference;
-		if (isParentNode(node) && isParentNode(readonlyReference)) {
-			this.#populateIdSets(node);
-			this.#populateIdSets(readonlyReference);
-			this.#populateSensivityMap(node);
+		if (isParentNode(node) && isParentNode(reference)) {
+			this.#mapIdSets(node);
+			this.#mapIdSets(reference);
+			this.#mapSensivity(node);
 		}
-		this.#morphNode(node, readonlyReference);
+		this.#morphNode(node, reference);
 	}
-	#populateSensivityMap(node) {
-		const sensitiveElements = node.querySelectorAll("iframe,video,object,embed,audio,input,textarea,canvas");
+	#mapSensivity(node) {
+		const sensitiveElements = node.querySelectorAll("audio,canvas,embed,iframe,input,object,textarea,video");
 		for (const sensitiveElement of sensitiveElements) {
 			let sensivity = 0;
 			if (isInput(sensitiveElement) || isTextArea(sensitiveElement)) {
@@ -43,7 +42,7 @@ class Morph {
 		}
 	}
 	// For each node with an ID, push that ID into the IdSet on the IdMap, for each of its parent elements.
-	#populateIdSets(node) {
+	#mapIdSets(node) {
 		const elementsWithIds = node.querySelectorAll("[id]");
 		for (const elementWithId of elementsWithIds) {
 			const id = elementWithId.id;
@@ -129,7 +128,7 @@ class Morph {
 		const refChildNodes = ref.childNodes;
 		for (let i = 0; i < refChildNodes.length; i++) {
 			const child = childNodes[i];
-			const refChild = refChildNodes[i]; //as ReadonlyNode<ChildNode> | null;
+			const refChild = refChildNodes[i];
 			if (child && refChild) {
 				if (isElement(child) && isElement(refChild)) this.#morphChildElement(child, refChild, element);
 				else this.#morphNode(child, refChild);

@@ -99,15 +99,13 @@ class Morph {
 	}
 
 	morph(node: ChildNode, reference: ChildNode): void {
-		const readonlyReference = reference as ReadonlyNode<ChildNode>;
-
-		if (isParentNode(node) && isParentNode(readonlyReference)) {
+		if (isParentNode(node) && isParentNode(reference)) {
 			this.#mapIdSets(node);
-			this.#mapIdSets(readonlyReference);
+			this.#mapIdSets(reference);
 			this.#mapSensivity(node);
 		}
 
-		this.#morphNode(node, readonlyReference);
+		this.#morphNode(node, reference);
 	}
 
 	#mapSensivity(node: ReadonlyNode<ParentNode>): void {
@@ -238,7 +236,7 @@ class Morph {
 
 		for (let i = 0; i < refChildNodes.length; i++) {
 			const child = childNodes[i] as ChildNode | null;
-			const refChild = refChildNodes[i]; //as ReadonlyNode<ChildNode> | null;
+			const refChild = refChildNodes[i] as ReadonlyNode<ChildNode> | null;
 
 			if (child && refChild) {
 				if (isElement(child) && isElement(refChild)) this.#morphChildElement(child, refChild, element);
