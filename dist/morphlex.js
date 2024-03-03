@@ -1,4 +1,12 @@
 export function morph(node, reference, options = {}) {
+	if (typeof reference === "string") {
+		const template = document.createElement("template");
+		template.innerHTML = reference.trim();
+		reference = template.content.firstChild;
+		if (!reference) {
+			throw new Error("The provided string did not contain any nodes.");
+		}
+	}
 	new Morph(options).morph(node, reference);
 }
 class Morph {

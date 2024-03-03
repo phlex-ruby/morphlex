@@ -83,8 +83,23 @@ export interface Options {
 	}) => void;
 }
 
-export function morph(node: ChildNode, reference: ChildNode, options: Options = {}): void {
-	new Morph(options).morph(node, reference);
+export function morph(node: ChildNode, reference: ChildNode | string, options: Options = {}): void {
+	if (typeof reference === "string") {
+		const template = document.createElement("template");
+		template.innerHTML = reference.trim();
+		reference = template.content.firstChild as ChildNode;
+		if (!reference) {
+			throw new Error("The provided string did not contain any nodes.");
+		}
+	}
+
+	if (isElement(node)) {
+		node.ariaBusy = "true";
+		new Morph(options).morph(node, reference);
+		node.ariaBusy = "false";
+	} else {
+		new Morph(options).morph(node, reference);
+	}
 }
 
 class Morph {

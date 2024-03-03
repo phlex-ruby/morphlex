@@ -45,5 +45,5 @@ export interface Options {
 		previousValue: unknown;
 	}) => void;
 }
-export declare function morph(node: ChildNode, reference: ChildNode, options?: Options): void;
+export declare function morph(node: ChildNode, reference: ChildNode | string, options?: Options): void;
 export {};
