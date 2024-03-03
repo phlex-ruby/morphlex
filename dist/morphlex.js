@@ -7,7 +7,13 @@ export function morph(node, reference, options = {}) {
 			throw new Error("The provided string did not contain any nodes.");
 		}
 	}
-	new Morph(options).morph(node, reference);
+	if (isElement(node)) {
+		node.ariaBusy = "true";
+		new Morph(options).morph(node, reference);
+		node.ariaBusy = null;
+	} else {
+		new Morph(options).morph(node, reference);
+	}
 }
 class Morph {
 	#options;

@@ -96,7 +96,7 @@ export function morph(node: ChildNode, reference: ChildNode | string, options: O
 	if (isElement(node)) {
 		node.ariaBusy = "true";
 		new Morph(options).morph(node, reference);
-		node.ariaBusy = "false";
+		node.ariaBusy = null;
 	} else {
 		new Morph(options).morph(node, reference);
 	}
