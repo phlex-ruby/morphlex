@@ -1,0 +1,5 @@
+{
+	"name": "@phlex/morphlex",
+	"version": "0.0.10",
+	"exports": "./src/morphlex.ts"
+}
