@@ -232,7 +232,7 @@ class Morph {
 			if (
 				element.type !== "file" &&
 				!(this.#options.ignoreActiveValue && document.activeElement === element) &&
-				!(this.#options.preserveModifiedValues && element.value !== element.defaultValue)
+				!(this.#options.preserveModifiedValues && element.name === ref.name && element.value !== element.defaultValue)
 			)
 				this.#updateProperty(element, "value", ref.value);
 		} else if (isOption(element) && isOption(ref)) this.#updateProperty(element, "selected", ref.selected);
