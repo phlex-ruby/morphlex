@@ -23,7 +23,7 @@
 		"test:watch": "npm run test -- --watch",
 		"lint": "prettier --check ./src ./dist ./test",
 		"minify": "terser dist/morphlex.js -o dist/morphlex.min.js --config-file terser-config.json",
-		"prepare": "npm update && npm run build && npm run minify",
+		"prepare": "npm run build && npm run minify",
 		"ship": "npm run prepare && npm run test && npm run lint && npm publish",
 		"format": "prettier --write ./src ./dist ./test",
 		"size": "npm run prepare && gzip-size ./dist/morphlex.min.js --raw --include-original"

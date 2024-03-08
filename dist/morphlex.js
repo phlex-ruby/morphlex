@@ -77,19 +77,18 @@ class Morph {
 		if (isElement(node) && isElement(ref) && node.localName === ref.localName) {
 			if (node.hasAttributes() || ref.hasAttributes()) this.#morphAttributes(node, ref);
 			if (isHead(node) && isHead(ref)) {
-				const refChildNodes = new Map();
-				for (const child of ref.children) refChildNodes.set(child.outerHTML, child);
+				const refChildNodesMap = new Map();
+				for (const child of ref.children) refChildNodesMap.set(child.outerHTML, child);
 				for (const child of node.children) {
 					const key = child.outerHTML;
-					const refChild = refChildNodes.get(key);
-					refChild ? refChildNodes.delete(key) : this.#removeNode(child);
+					const refChild = refChildNodesMap.get(key);
+					refChild ? refChildNodesMap.delete(key) : this.#removeNode(child);
 				}
-				for (const refChild of refChildNodes.values()) this.#appendChild(node, refChild.cloneNode(true));
+				for (const refChild of refChildNodesMap.values()) this.#appendChild(node, refChild.cloneNode(true));
 			} else if (node.hasChildNodes() || ref.hasChildNodes()) this.#morphChildNodes(node, ref);
 		} else {
-			if (isText(node) && isText(ref)) {
-				this.#updateProperty(node, "textContent", ref.textContent);
-			} else if (isComment(node) && isComment(ref)) {
+			if (node.nodeType === ref.nodeType && node.nodeValue !== null && ref.nodeValue !== null) {
+				// Handle text nodes, comments, and CDATA sections.
 				this.#updateProperty(node, "nodeValue", ref.nodeValue);
 			} else this.#replaceNode(node, ref.cloneNode(true));
 		}
@@ -132,8 +131,8 @@ class Morph {
 		} else if (isOption(element) && isOption(ref)) this.#updateProperty(element, "selected", ref.selected);
 		else if (isTextArea(element) && isTextArea(ref)) {
 			this.#updateProperty(element, "value", ref.value);
-			const text = element.firstChild;
-			if (text && isText(text)) this.#updateProperty(text, "textContent", ref.value);
+			const text = element.firstElementChild;
+			if (text) this.#updateProperty(text, "textContent", ref.value);
 		}
 	}
 	// Iterates over the child nodes of the reference element, morphing the main element’s child nodes to match.
@@ -145,7 +144,7 @@ class Morph {
 			const refChild = refChildNodes[i];
 			if (child && refChild) {
 				if (isElement(child) && isElement(refChild)) this.#morphChildElement(child, refChild, element);
-				else this.#morphNode(child, refChild);
+				else this.#morphNode(child, refChild); // TODO: performance optimization here
 			} else if (refChild) {
 				this.#appendChild(element, refChild.cloneNode(true));
 			} else if (child) {
@@ -246,12 +245,6 @@ class Morph {
 			this.#options.afterNodeRemoved?.({ oldNode: node });
 		}
 	}
-}
-function isText(node) {
-	return node.nodeType === 3;
-}
-function isComment(node) {
-	return node.nodeType === 8;
 }
 function isElement(node) {
 	return node.nodeType === 1;

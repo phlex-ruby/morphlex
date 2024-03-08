@@ -2,7 +2,7 @@ import { fixture, html, expect } from "@open-wc/testing";
 import { morph } from "../";
 
 describe("morph", () => {
-	it.only("doesn't cause iframes to reload", async () => {
+	it("doesn't cause iframes to reload", async () => {
 		const original = await fixture(
 			`<div>
 				<h1></h1>
