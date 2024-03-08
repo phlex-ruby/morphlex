@@ -189,9 +189,7 @@ class Morph {
 				for (const refChild of refChildNodes.values()) this.#appendChild(node, refChild.cloneNode(true));
 			} else if (node.hasChildNodes() || ref.hasChildNodes()) this.#morphChildNodes(node, ref);
 		} else {
-			if (isText(node) && isText(ref)) {
-				this.#updateProperty(node, "textContent", ref.textContent);
-			} else if (isComment(node) && isComment(ref)) {
+			if (node.nodeType === ref.nodeType && node.nodeValue !== null && ref.nodeValue !== null) {
 				this.#updateProperty(node, "nodeValue", ref.nodeValue);
 			} else this.#replaceNode(node, ref.cloneNode(true));
 		}
@@ -239,8 +237,8 @@ class Morph {
 		else if (isTextArea(element) && isTextArea(ref)) {
 			this.#updateProperty(element, "value", ref.value);
 
-			const text = element.firstChild;
-			if (text && isText(text)) this.#updateProperty(text, "textContent", ref.value);
+			const text = element.firstElementChild;
+			if (text) this.#updateProperty(text, "textContent", ref.value);
 		}
 	}
 
@@ -255,7 +253,7 @@ class Morph {
 
 			if (child && refChild) {
 				if (isElement(child) && isElement(refChild)) this.#morphChildElement(child, refChild, element);
-				else this.#morphNode(child, refChild);
+				else this.#morphNode(child, refChild); // TODO: performance optimization here
 			} else if (refChild) {
 				this.#appendChild(element, refChild.cloneNode(true));
 			} else if (child) {
@@ -382,18 +380,6 @@ class Morph {
 // We cannot use `instanceof` when nodes might be from different documents,
 // so we use type guards instead. This keeps TypeScript happy, while doing
 // the necessary checks at runtime.
-
-function isText(node: Node): node is Text;
-function isText(node: ReadonlyNode<Node>): node is ReadonlyNode<Text>;
-function isText(node: Node | ReadonlyNode<Node>): boolean {
-	return node.nodeType === 3;
-}
-
-function isComment(node: Node): node is Comment;
-function isComment(node: ReadonlyNode<Node>): node is ReadonlyNode<Comment>;
-function isComment(node: Node | ReadonlyNode<Node>): boolean {
-	return node.nodeType === 8;
-}
 
 function isElement(node: Node): node is Element;
 function isElement(node: ReadonlyNode<Node>): node is ReadonlyNode<Element>;
