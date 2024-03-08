@@ -1,10 +1,12 @@
 # Morphlex
 
-Morphlex is a tiny, safe, optimal DOM morphing library written in TypeScript.
+Morphlex is a tiny (1.6KB minified/gzipped), safe, optimal DOM morphing library written in TypeScript. DOM morphing is the process of transforming one DOM tree to reflect another, while preserving the state of the original tree and making as few changes as possible.
+
+Morphlex uses ID Sets — a concept pioneered by Idiomorph — to match nodes with deeply nested identified elements. It also maps out _sensitive_ elements to avoid moving them around.
 
 ## ID Sets
 
-Inspired by Idiomorph, Morphlex uses ID Sets to match nodes with deeply nested identified elements. Each element is tagged with the set of IDs it contains, allowing for more optimal matching.
+Each element is tagged with the set of IDs it contains, allowing for more optimal matching.
 
 Failing an ID Set match, Morphlex will search for the next best match by tag name. If no element can be found, the reference element will be deeply cloned.
 
