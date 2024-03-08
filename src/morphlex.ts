@@ -33,54 +33,20 @@ export interface Options {
 	ignoreActiveValue?: boolean;
 	preserveModifiedValues?: boolean;
 
-	beforeNodeMorphed?: ({ node, referenceNode }: { node: Node; referenceNode: Node }) => boolean;
-	afterNodeMorphed?: ({ node, referenceNode }: { node: Node; referenceNode: Node }) => void;
+	beforeNodeMorphed?: (node: Node, referenceNode: Node) => boolean;
+	afterNodeMorphed?: (node: Node, referenceNode: Node) => void;
 
-	beforeNodeAdded?: ({ newNode, parentNode }: { newNode: Node; parentNode: ParentNode | null }) => boolean;
-	afterNodeAdded?: ({ newNode }: { newNode: Node }) => void;
+	beforeNodeAdded?: (node: Node) => boolean;
+	afterNodeAdded?: (node: Node) => void;
 
-	beforeNodeRemoved?: ({ oldNode }: { oldNode: Node }) => boolean;
-	afterNodeRemoved?: ({ oldNode }: { oldNode: Node }) => void;
+	beforeNodeRemoved?: (node: Node) => boolean;
+	afterNodeRemoved?: (node: Node) => void;
 
-	beforeAttributeUpdated?: ({
-		element,
-		attributeName,
-		newValue,
-	}: {
-		element: Element;
-		attributeName: string;
-		newValue: string | null;
-	}) => boolean;
+	beforeAttributeUpdated?: (element: Element, attributeName: string, newValue: string | null) => boolean;
+	afterAttributeUpdated?: (element: Element, attributeName: string, previousValue: string | null) => void;
 
-	afterAttributeUpdated?: ({
-		element,
-		attributeName,
-		previousValue,
-	}: {
-		element: Element;
-		attributeName: string;
-		previousValue: string | null;
-	}) => void;
-
-	beforePropertyUpdated?: ({
-		node,
-		propertyName,
-		newValue,
-	}: {
-		node: Node;
-		propertyName: ObjectKey;
-		newValue: unknown;
-	}) => boolean;
-
-	afterPropertyUpdated?: ({
-		node,
-		propertyName,
-		previousValue,
-	}: {
-		node: Node;
-		propertyName: ObjectKey;
-		previousValue: unknown;
-	}) => void;
+	beforePropertyUpdated?: (node: Node, propertyName: ObjectKey, newValue: unknown) => boolean;
+	afterPropertyUpdated?: (node: Node, propertyName: ObjectKey, previousValue: unknown) => void;
 }
 
 export function morph(node: ChildNode, reference: ChildNode | string, options: Options = {}): void {
@@ -174,7 +140,7 @@ class Morph {
 
 	// This is where we actually morph the nodes. The `morph` function (above) exists only to set up the `idMap`.
 	#morphNode(node: ChildNode, ref: ReadonlyNode<ChildNode>): void {
-		if (!(this.#options.beforeNodeMorphed?.({ node, referenceNode: ref as ChildNode }) ?? true)) return;
+		if (!(this.#options.beforeNodeMorphed?.(node, ref as ChildNode) ?? true)) return;
 
 		if (isElement(node) && isElement(ref) && node.localName === ref.localName) {
 			if (node.hasAttributes() || ref.hasAttributes()) this.#morphAttributes(node, ref);
@@ -195,30 +161,24 @@ class Morph {
 			} else this.#replaceNode(node, ref.cloneNode(true));
 		}
 
-		this.#options.afterNodeMorphed?.({ node, referenceNode: ref as ChildNode });
+		this.#options.afterNodeMorphed?.(node, ref as ChildNode);
 	}
 
 	#morphAttributes(element: Element, ref: ReadonlyNode<Element>): void {
 		// Remove any excess attributes from the element that aren’t present in the reference.
 		for (const { name, value } of element.attributes) {
-			if (
-				!ref.hasAttribute(name) &&
-				(this.#options.beforeAttributeUpdated?.({ element, attributeName: name, newValue: null }) ?? true)
-			) {
+			if (!ref.hasAttribute(name) && (this.#options.beforeAttributeUpdated?.(element, name, null) ?? true)) {
 				element.removeAttribute(name);
-				this.#options.afterAttributeUpdated?.({ element, attributeName: name, previousValue: value });
+				this.#options.afterAttributeUpdated?.(element, name, value);
 			}
 		}
 
 		// Copy attributes from the reference to the element, if they don’t already match.
 		for (const { name, value } of ref.attributes) {
 			const previousValue = element.getAttribute(name);
-			if (
-				previousValue !== value &&
-				(this.#options.beforeAttributeUpdated?.({ element, attributeName: name, newValue: value }) ?? true)
-			) {
+			if (previousValue !== value && (this.#options.beforeAttributeUpdated?.(element, name, value) ?? true)) {
 				element.setAttribute(name, value);
-				this.#options.afterAttributeUpdated?.({ element, attributeName: name, previousValue });
+				this.#options.afterAttributeUpdated?.(element, name, previousValue);
 			}
 		}
 
@@ -270,6 +230,7 @@ class Morph {
 	}
 
 	#morphChildElement(child: Element, ref: ReadonlyNode<Element>, parent: Element): void {
+		if (!(this.#options.beforeNodeMorphed?.(child, ref as ChildNode) ?? true)) return;
 		const refIdSet = this.#idMap.get(ref);
 
 		// Generate the array in advance of the loop
@@ -310,29 +271,28 @@ class Morph {
 			this.#morphNode(nextMatchByTagName, ref);
 		} else {
 			const newNode = ref.cloneNode(true);
-			if (this.#options.beforeNodeAdded?.({ newNode, parentNode: parent }) ?? true) {
+			if (this.#options.beforeNodeAdded?.(newNode) ?? true) {
 				this.#insertBefore(parent, newNode, child);
-				this.#options.afterNodeAdded?.({ newNode });
+				this.#options.afterNodeAdded?.(newNode);
 			}
 		}
+
+		this.#options.afterNodeMorphed?.(child, ref as ChildNode);
 	}
 
 	#updateProperty<N extends Node, P extends keyof N>(node: N, propertyName: P, newValue: N[P]): void {
 		const previousValue = node[propertyName];
-		if (previousValue !== newValue && (this.#options.beforePropertyUpdated?.({ node, propertyName, newValue }) ?? true)) {
+		if (previousValue !== newValue && (this.#options.beforePropertyUpdated?.(node, propertyName, newValue) ?? true)) {
 			node[propertyName] = newValue;
-			this.#options.afterPropertyUpdated?.({ node, propertyName, previousValue });
+			this.#options.afterPropertyUpdated?.(node, propertyName, previousValue);
 		}
 	}
 
 	#replaceNode(node: ChildNode, newNode: Node): void {
-		if (
-			(this.#options.beforeNodeRemoved?.({ oldNode: node }) ?? true) &&
-			(this.#options.beforeNodeAdded?.({ newNode, parentNode: node.parentNode }) ?? true)
-		) {
+		if ((this.#options.beforeNodeRemoved?.(node) ?? true) && (this.#options.beforeNodeAdded?.(newNode) ?? true)) {
 			node.replaceWith(newNode);
-			this.#options.afterNodeAdded?.({ newNode });
-			this.#options.afterNodeRemoved?.({ oldNode: node });
+			this.#options.afterNodeAdded?.(newNode);
+			this.#options.afterNodeRemoved?.(node);
 		}
 	}
 
@@ -364,16 +324,16 @@ class Morph {
 	}
 
 	#appendChild(node: ParentNode, newNode: Node): void {
-		if (this.#options.beforeNodeAdded?.({ newNode, parentNode: node }) ?? true) {
+		if (this.#options.beforeNodeAdded?.(newNode) ?? true) {
 			node.appendChild(newNode);
-			this.#options.afterNodeAdded?.({ newNode });
+			this.#options.afterNodeAdded?.(newNode);
 		}
 	}
 
 	#removeNode(node: ChildNode): void {
-		if (this.#options.beforeNodeRemoved?.({ oldNode: node }) ?? true) {
+		if (this.#options.beforeNodeRemoved?.(node) ?? true) {
 			node.remove();
-			this.#options.afterNodeRemoved?.({ oldNode: node });
+			this.#options.afterNodeRemoved?.(node);
 		}
 	}
 }
