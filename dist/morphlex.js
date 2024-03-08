@@ -30,7 +30,9 @@ class Morph {
 			this.#mapIdSets(reference);
 			this.#mapSensivity(node);
 		}
-		this.#morphNode(node, reference);
+		requestAnimationFrame(() => {
+			this.#morphNode(node, reference);
+		});
 	}
 	#mapSensivity(node) {
 		const sensitiveElements = node.querySelectorAll("audio,canvas,embed,iframe,input,object,textarea,video");

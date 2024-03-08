@@ -1,5 +1,6 @@
 import { fixture, html, expect } from "@open-wc/testing";
 import { morph } from "../";
+import { nextFrame } from "./helpers";
 
 describe("morph", () => {
 	it("doesn't cause iframes to reload", async () => {
@@ -19,6 +20,9 @@ describe("morph", () => {
 
 		const originalIframe = original.querySelector("iframe");
 		morph(original, reference);
+
+		await nextFrame();
+
 		expect(original.outerHTML).to.equal(reference.outerHTML);
 	});
 
@@ -34,6 +38,8 @@ describe("morph", () => {
 
 		morph(original, eventual);
 
+		await nextFrame();
+
 		expect(original.textContent).to.equal("Hello Joel");
 	});
 
@@ -47,6 +53,8 @@ describe("morph", () => {
 
 		morph(a, b);
 
+		await nextFrame();
+
 		expect(a.textContent).to.equal(b.textContent);
 	});
 
@@ -55,6 +63,8 @@ describe("morph", () => {
 		const b = await fixture(html`<h1></h1>`);
 
 		morph(a, b);
+
+		await nextFrame();
 
 		expect(a.outerHTML).to.equal(b.outerHTML);
 	});
