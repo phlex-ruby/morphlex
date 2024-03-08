@@ -77,17 +77,18 @@ class Morph {
 		if (isElement(node) && isElement(ref) && node.localName === ref.localName) {
 			if (node.hasAttributes() || ref.hasAttributes()) this.#morphAttributes(node, ref);
 			if (isHead(node) && isHead(ref)) {
-				const refChildNodes = new Map();
-				for (const child of ref.children) refChildNodes.set(child.outerHTML, child);
+				const refChildNodesMap = new Map();
+				for (const child of ref.children) refChildNodesMap.set(child.outerHTML, child);
 				for (const child of node.children) {
 					const key = child.outerHTML;
-					const refChild = refChildNodes.get(key);
-					refChild ? refChildNodes.delete(key) : this.#removeNode(child);
+					const refChild = refChildNodesMap.get(key);
+					refChild ? refChildNodesMap.delete(key) : this.#removeNode(child);
 				}
-				for (const refChild of refChildNodes.values()) this.#appendChild(node, refChild.cloneNode(true));
+				for (const refChild of refChildNodesMap.values()) this.#appendChild(node, refChild.cloneNode(true));
 			} else if (node.hasChildNodes() || ref.hasChildNodes()) this.#morphChildNodes(node, ref);
 		} else {
 			if (node.nodeType === ref.nodeType && node.nodeValue !== null && ref.nodeValue !== null) {
+				// Handle text nodes, comments, and CDATA sections.
 				this.#updateProperty(node, "nodeValue", ref.nodeValue);
 			} else this.#replaceNode(node, ref.cloneNode(true));
 		}
