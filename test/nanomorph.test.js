@@ -1,5 +1,6 @@
 import { fixture, html, expect } from "@open-wc/testing";
 import { morph } from "../";
+import { nextFrame } from "./helpers";
 
 // adapted from: https://github.com/choojs/nanomorph/blob/b8088d03b1113bddabff8aa0e44bd8db88d023c7/test/diff.js
 describe("nanomorph", () => {
@@ -12,6 +13,8 @@ describe("nanomorph", () => {
 
 			morph(a, b);
 
+			await nextFrame();
+
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
 
@@ -20,6 +23,8 @@ describe("nanomorph", () => {
 			const b = await fixture(html`<div data-nanomorph-component-id="b">bye moon</div>`);
 
 			morph(a, b);
+
+			await nextFrame();
 
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
@@ -30,6 +35,8 @@ describe("nanomorph", () => {
 
 			morph(a, b);
 
+			await nextFrame();
+
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
 
@@ -39,6 +46,8 @@ describe("nanomorph", () => {
 
 			morph(a, b);
 
+			await nextFrame();
+
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
 
@@ -46,6 +55,8 @@ describe("nanomorph", () => {
 			const a = await fixture(html`<p>hello world</p>`);
 
 			morph(a, a);
+
+			await nextFrame();
 
 			expect(a.outerHTML).to.equal(a.outerHTML);
 		});
@@ -58,6 +69,8 @@ describe("nanomorph", () => {
 
 			morph(a, b);
 
+			await nextFrame();
+
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
 
@@ -67,6 +80,8 @@ describe("nanomorph", () => {
 
 			morph(a, b);
 
+			await nextFrame();
+
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
 
@@ -74,6 +89,8 @@ describe("nanomorph", () => {
 			const a = await fixture(html`<main><p>hello world</p></main>`);
 
 			morph(a, a);
+
+			await nextFrame();
 
 			expect(a.outerHTML).to.equal(a.outerHTML);
 		});
@@ -84,6 +101,8 @@ describe("nanomorph", () => {
 
 			morph(a, b);
 
+			await nextFrame();
+
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
 
@@ -93,6 +112,8 @@ describe("nanomorph", () => {
 
 			morph(a, b);
 
+			await nextFrame();
+
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
 
@@ -101,6 +122,8 @@ describe("nanomorph", () => {
 			const b = await fixture(html`<section><p>hello you</p></section>`);
 
 			morph(a, b, { childrenOnly: true });
+
+			await nextFrame();
 
 			expect(a.outerHTML).to.equal("<main><p>hello you</p></main>");
 		});
@@ -113,6 +136,8 @@ describe("nanomorph", () => {
 
 			morph(a, b);
 
+			await nextFrame();
+
 			expect(a.outerHTML).to.equal(b.outerHTML);
 			expect(a.getAttribute("value")).to.equal(null);
 			expect(a.value).to.equal("");
@@ -124,6 +149,8 @@ describe("nanomorph", () => {
 
 			morph(a, b);
 
+			await nextFrame();
+
 			expect(a.outerHTML).to.equal(b.outerHTML);
 			expect(a.getAttribute("value")).to.equal(null);
 			expect(a.value).to.equal("");
@@ -134,6 +161,8 @@ describe("nanomorph", () => {
 			const b = await fixture(html`<input type="text" value="hi" />`);
 
 			morph(a, b);
+
+			await nextFrame();
 
 			expect(a.outerHTML).to.equal(b.outerHTML);
 			expect(a.value).to.equal("hi");
@@ -147,6 +176,8 @@ describe("nanomorph", () => {
 
 			morph(a, b);
 
+			await nextFrame();
+
 			expect(a.outerHTML).to.equal(b.outerHTML);
 			expect(a.value).to.equal("hi");
 		});
@@ -158,6 +189,8 @@ describe("nanomorph", () => {
 
 			morph(a, b);
 
+			await nextFrame();
+
 			expect(a.outerHTML).to.equal(b.outerHTML);
 			expect(a.value).to.equal("hi");
 		});
@@ -168,6 +201,8 @@ describe("nanomorph", () => {
 			const b = await fixture(html`<input type="text" value="hi" />`);
 
 			morph(a, b);
+
+			await nextFrame();
 
 			expect(a.outerHTML).to.equal(b.outerHTML);
 			expect(a.value).to.equal("hi");
@@ -182,6 +217,8 @@ describe("nanomorph", () => {
 
 				morph(a, b);
 
+				await nextFrame();
+
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.checked).to.equal(false);
 			});
@@ -191,6 +228,8 @@ describe("nanomorph", () => {
 				const b = await fixture(html`<input type="checkbox" checked=${true} />`);
 
 				morph(a, b);
+
+				await nextFrame();
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.checked).to.equal(true);
@@ -202,6 +241,8 @@ describe("nanomorph", () => {
 
 				morph(a, b);
 
+				await nextFrame();
+
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.checked).to.equal(true);
 			});
@@ -211,6 +252,8 @@ describe("nanomorph", () => {
 				const b = await fixture(html`<input type="checkbox" checked=${false} />`);
 
 				morph(a, b);
+
+				await nextFrame();
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.checked).to.equal(false);
@@ -223,6 +266,8 @@ describe("nanomorph", () => {
 
 				morph(a, b);
 
+				await nextFrame();
+
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.checked).to.equal(true);
 			});
@@ -233,6 +278,8 @@ describe("nanomorph", () => {
 				b.checked = true;
 
 				morph(a, b);
+
+				await nextFrame();
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.checked).to.equal(true);
@@ -245,6 +292,8 @@ describe("nanomorph", () => {
 
 				morph(a, b);
 
+				await nextFrame();
+
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.checked).to.equal(false);
 			});
@@ -254,6 +303,8 @@ describe("nanomorph", () => {
 				const b = await fixture(html`<input type="checkbox" checked=${true} />`);
 
 				morph(a, b);
+
+				await nextFrame();
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.checked).to.equal(true);
@@ -267,6 +318,8 @@ describe("nanomorph", () => {
 
 				morph(a, b);
 
+				await nextFrame();
+
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.disabled).to.equal(false);
 			});
@@ -276,6 +329,8 @@ describe("nanomorph", () => {
 				const b = await fixture(html`<input type="checkbox" disabled=${true} />`);
 
 				morph(a, b);
+
+				await nextFrame();
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.disabled).to.equal(true);
@@ -287,6 +342,8 @@ describe("nanomorph", () => {
 
 				morph(a, b);
 
+				await nextFrame();
+
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.disabled).to.equal(true);
 			});
@@ -296,6 +353,8 @@ describe("nanomorph", () => {
 				const b = await fixture(html`<input type="checkbox" disabled=${false} />`);
 
 				morph(a, b);
+
+				await nextFrame();
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.disabled).to.equal(false);
@@ -308,6 +367,8 @@ describe("nanomorph", () => {
 
 				morph(a, b);
 
+				await nextFrame();
+
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.disabled).to.equal(true);
 			});
@@ -318,6 +379,8 @@ describe("nanomorph", () => {
 				b.disabled = true;
 
 				morph(a, b);
+
+				await nextFrame();
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.disabled).to.equal(true);
@@ -330,6 +393,8 @@ describe("nanomorph", () => {
 
 				morph(a, b);
 
+				await nextFrame();
+
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.disabled).to.equal(false);
 			});
@@ -339,6 +404,8 @@ describe("nanomorph", () => {
 				const b = await fixture(html`<input type="checkbox" disabled=${true} />`);
 
 				morph(a, b);
+
+				await nextFrame();
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.disabled).to.equal(true);
@@ -353,6 +420,8 @@ describe("nanomorph", () => {
 
 				morph(a, b);
 
+				await nextFrame();
+
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.indeterminate).to.equal(true);
 			});
@@ -363,6 +432,8 @@ describe("nanomorph", () => {
 				b.indeterminate = false;
 
 				morph(a, b);
+
+				await nextFrame();
 
 				expect(a.outerHTML).to.equal(b.outerHTML);
 				expect(a.indeterminate).to.equal(false);
@@ -385,6 +456,8 @@ describe("nanomorph", () => {
 
 			morph(a, b);
 
+			await nextFrame();
+
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
 
@@ -401,6 +474,8 @@ describe("nanomorph", () => {
 			const b = await fixture(html`<ul></ul>`);
 
 			morph(a, b);
+
+			await nextFrame();
 
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
@@ -420,6 +495,8 @@ describe("nanomorph", () => {
 
 			morph(a, b);
 
+			await nextFrame();
+
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
 
@@ -438,6 +515,8 @@ describe("nanomorph", () => {
 
 			morph(a, b);
 
+			await nextFrame();
+
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
 
@@ -453,6 +532,8 @@ describe("nanomorph", () => {
 			const b = await fixture(html`<select></select>`);
 
 			morph(a, b);
+
+			await nextFrame();
 
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
@@ -471,6 +552,8 @@ describe("nanomorph", () => {
 			const b = await fixture(html`<select></select>`);
 
 			morph(a, b);
+
+			await nextFrame();
 
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
@@ -491,6 +574,8 @@ describe("nanomorph", () => {
 
 			morph(a, b);
 
+			await nextFrame();
+
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
 
@@ -510,6 +595,8 @@ describe("nanomorph", () => {
 
 			morph(a, b);
 
+			await nextFrame();
+
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
 
@@ -528,6 +615,8 @@ describe("nanomorph", () => {
 			);
 
 			morph(a, b);
+
+			await nextFrame();
 
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
@@ -555,6 +644,8 @@ describe("nanomorph", () => {
 
 		morph(a, b);
 
+		await nextFrame();
+
 		expect(a.outerHTML).to.equal(b.outerHTML);
 	});
 
@@ -572,6 +663,8 @@ describe("nanomorph", () => {
 
 		morph(a, b);
 
+		await nextFrame();
+
 		expect(a.outerHTML).to.equal(b.outerHTML);
 
 		const c = await fixture(
@@ -585,6 +678,8 @@ describe("nanomorph", () => {
 		);
 
 		morph(a, c);
+
+		await nextFrame();
 
 		expect(a.outerHTML).to.equal(c.outerHTML);
 	});
@@ -612,6 +707,8 @@ describe("nanomorph", () => {
 			const oldThird = a.children[2];
 
 			morph(a, b);
+
+			await nextFrame();
 
 			expect(a.outerHTML).to.equal(b.outerHTML);
 			expect(a.children[0]).to.equal(oldFirst);
@@ -646,6 +743,8 @@ describe("nanomorph", () => {
 
 			morph(a, b);
 
+			await nextFrame();
+
 			expect(a.outerHTML).to.equal(b.outerHTML);
 			expect(a.children[1]).to.equal(oldSecond);
 			expect(a.children[3]).to.equal(oldThird);
@@ -667,6 +766,8 @@ describe("nanomorph", () => {
 			);
 
 			morph(a, b);
+
+			await nextFrame();
 
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
@@ -691,6 +792,8 @@ describe("nanomorph", () => {
 
 			morph(a, b);
 
+			await nextFrame();
+
 			expect(a.outerHTML).to.equal(b.outerHTML);
 			expect(a.children[0]).to.equal(oldFirst);
 			expect(a.children[1]).to.equal(oldThird);
@@ -701,6 +804,8 @@ describe("nanomorph", () => {
 			const b = await fixture(html`<li id="12">BAR</li>`);
 
 			morph(a, b);
+
+			await nextFrame();
 
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
@@ -721,6 +826,8 @@ describe("nanomorph", () => {
 
 			morph(a, b);
 
+			await nextFrame();
+
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
 
@@ -735,6 +842,8 @@ describe("nanomorph", () => {
 
 			morph(a, b);
 
+			await nextFrame();
+
 			expect(a.outerHTML).to.equal(b.outerHTML);
 		});
 	});
@@ -748,6 +857,8 @@ describe("nanomorph", () => {
 
 		morph(a, b);
 
+		await nextFrame();
+
 		expect(a.outerHTML).to.equal(b.outerHTML);
 	});
 
@@ -759,6 +870,8 @@ describe("nanomorph", () => {
 		const b = await fixture(html`<div><div>a</div></div>`);
 
 		morph(a, b);
+
+		await nextFrame();
 
 		expect(a.outerHTML).to.equal(b.outerHTML);
 	});
@@ -775,6 +888,8 @@ describe("nanomorph", () => {
 
 		morph(a, b);
 
+		await nextFrame();
+
 		expect(a.outerHTML).to.equal(b.outerHTML);
 	});
 
@@ -783,6 +898,8 @@ describe("nanomorph", () => {
 		const b = await fixture(html`<div><div>b</div></div>`);
 
 		morph(a, b);
+
+		await nextFrame();
 
 		expect(a.outerHTML).to.equal(b.outerHTML);
 	});

@@ -120,7 +120,9 @@ class Morph {
 			this.#mapSensivity(node);
 		}
 
-		this.#morphNode(node, reference);
+		requestAnimationFrame(() => {
+			this.#morphNode(node, reference);
+		});
 	}
 
 	#mapSensivity(node: ReadonlyNode<ParentNode>): void {
