@@ -152,16 +152,8 @@ class Morph {
 
 		if (isElement(node) && isElement(ref) && node.localName === ref.localName) {
 			if (node.hasAttributes() || ref.hasAttributes()) this.#morphAttributes(node, ref);
-			if (isHead(node) && isHead(ref)) {
-				const refChildNodesMap: Map<string, ReadonlyNode<Element>> = new Map();
-				for (const child of ref.children) refChildNodesMap.set(child.outerHTML, child);
-				for (const child of node.children) {
-					const key = child.outerHTML;
-					const refChild = refChildNodesMap.get(key);
-					refChild ? refChildNodesMap.delete(key) : this.#removeNode(child);
-				}
-				for (const refChild of refChildNodesMap.values()) this.#appendChild(node, refChild.cloneNode(true));
-			} else if (node.hasChildNodes() || ref.hasChildNodes()) this.#morphChildNodes(node, ref);
+			if (isHead(node)) this.#morphHead(node, ref as ReadonlyNode<HTMLHeadElement>);
+			else if (node.hasChildNodes() || ref.hasChildNodes()) this.#morphChildNodes(node, ref);
 		} else {
 			if (node.nodeType === ref.nodeType && node.nodeValue !== null && ref.nodeValue !== null) {
 				// Handle text nodes, comments, and CDATA sections.
@@ -170,6 +162,25 @@ class Morph {
 		}
 
 		this.#options.afterNodeMorphed?.(node, ref as ChildNode);
+	}
+
+	#morphHead(node: HTMLHeadElement, reference: ReadonlyNode<HTMLHeadElement>): void {
+		const refChildNodesMap: Map<string, ReadonlyNode<Element>> = new Map();
+
+		// Generate a map of the reference head element’s child nodes, keyed by their outerHTML.
+		for (const child of reference.children) refChildNodesMap.set(child.outerHTML, child);
+
+		for (const child of node.children) {
+			const key = child.outerHTML;
+			const refChild = refChildNodesMap.get(key);
+
+			// If the child is in the reference map already, we don’t need to add it later.
+			// If it’s not in the map, we need to remove it from the node.
+			refChild ? refChildNodesMap.delete(key) : this.#removeNode(child);
+		}
+
+		// Any remaining nodes in the map should be appended to the head.
+		for (const refChild of refChildNodesMap.values()) this.#appendChild(node, refChild.cloneNode(true));
 	}
 
 	#morphAttributes(element: Element, ref: ReadonlyNode<Element>): void {
@@ -221,8 +232,10 @@ class Morph {
 			const refChild = refChildNodes[i] as ReadonlyNode<ChildNode> | null;
 
 			if (child && refChild) {
-				if (isElement(child) && isElement(refChild)) this.#morphChildElement(child, refChild, element);
-				else this.#morphNode(child, refChild); // TODO: performance optimization here
+				if (isElement(child) && isElement(refChild) && child.localName === refChild.localName) {
+					if (isHead(child)) this.#morphHead(child, refChild as ReadonlyNode<HTMLHeadElement>);
+					else this.#morphChildElement(child, refChild, element);
+				} else this.#morphNode(child, refChild); // TODO: performance optimization here
 			} else if (refChild) {
 				this.#appendChild(element, refChild.cloneNode(true));
 			} else if (child) {
@@ -239,6 +252,7 @@ class Morph {
 
 	#morphChildElement(child: Element, ref: ReadonlyNode<Element>, parent: Element): void {
 		if (!(this.#options.beforeNodeMorphed?.(child, ref as ChildNode) ?? true)) return;
+
 		const refIdSet = this.#idMap.get(ref);
 
 		// Generate the array in advance of the loop
