@@ -23,12 +23,16 @@ class Morph {
 		this.#options = options;
 		this.#idMap = new WeakMap();
 		this.#sensivityMap = new WeakMap();
+		Object.freeze(this.#options);
+		Object.freeze(this);
 	}
 	morph(node, reference) {
 		if (isParentNode(node) && isParentNode(reference)) {
 			this.#mapIdSets(node);
 			this.#mapIdSets(reference);
 			this.#mapSensivity(node);
+			Object.freeze(this.#idMap);
+			Object.freeze(this.#sensivityMap);
 		}
 		requestAnimationFrame(() => {
 			this.#morphNode(node, reference);

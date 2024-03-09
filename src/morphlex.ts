@@ -77,6 +77,9 @@ class Morph {
 		this.#options = options;
 		this.#idMap = new WeakMap();
 		this.#sensivityMap = new WeakMap();
+
+		Object.freeze(this.#options);
+		Object.freeze(this);
 	}
 
 	morph(node: ChildNode, reference: ChildNode): void {
@@ -84,6 +87,9 @@ class Morph {
 			this.#mapIdSets(node);
 			this.#mapIdSets(reference);
 			this.#mapSensivity(node);
+
+			Object.freeze(this.#idMap);
+			Object.freeze(this.#sensivityMap);
 		}
 
 		requestAnimationFrame(() => {
