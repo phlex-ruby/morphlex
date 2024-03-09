@@ -1,4 +1,4 @@
-# Morphlex
+<img src="https://github.com/phlex-ruby/morphlex/assets/246692/128ebe6a-bdf3-4b88-8a40-f29df64b3ac8" alt="Morphlex" width="481">
 
 Morphlex is a tiny (1.6KB [minified/gzipped](https://www.unpkg.com/morphlex)), safe, optimal DOM morphing library written in TypeScript. DOM morphing is the process of transforming one DOM tree to reflect another, while preserving the state of the original tree and making as few changes as possible.
 
