@@ -1,4 +1,4 @@
-export interface Options {
+interface Options {
 	ignoreActiveValue?: boolean;
 	preserveModifiedValues?: boolean;
 	beforeNodeMorphed?: (node: Node, referenceNode: Node) => boolean;
@@ -13,3 +13,4 @@ export interface Options {
 	afterPropertyUpdated?: (node: Node, propertyName: PropertyKey, previousValue: unknown) => void;
 }
 export declare function morph(node: ChildNode, reference: ChildNode | string, options?: Options): void;
+export {};

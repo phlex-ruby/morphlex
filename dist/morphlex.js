@@ -16,14 +16,35 @@ export function morph(node, reference, options = {}) {
 	}
 }
 class Morph {
-	#options;
 	#idMap;
 	#sensivityMap;
+	#ignoreActiveValue;
+	#preserveModifiedValues;
+	#beforeNodeMorphed;
+	#afterNodeMorphed;
+	#beforeNodeAdded;
+	#afterNodeAdded;
+	#beforeNodeRemoved;
+	#afterNodeRemoved;
+	#beforeAttributeUpdated;
+	#afterAttributeUpdated;
+	#beforePropertyUpdated;
+	#afterPropertyUpdated;
 	constructor(options = {}) {
-		this.#options = options;
 		this.#idMap = new WeakMap();
 		this.#sensivityMap = new WeakMap();
-		Object.freeze(this.#options);
+		this.#ignoreActiveValue = options.ignoreActiveValue || false;
+		this.#preserveModifiedValues = options.preserveModifiedValues || false;
+		this.#beforeNodeMorphed = options.beforeNodeMorphed;
+		this.#afterNodeMorphed = options.afterNodeMorphed;
+		this.#beforeNodeAdded = options.beforeNodeAdded;
+		this.#afterNodeAdded = options.afterNodeAdded;
+		this.#beforeNodeRemoved = options.beforeNodeRemoved;
+		this.#afterNodeRemoved = options.afterNodeRemoved;
+		this.#beforeAttributeUpdated = options.beforeAttributeUpdated;
+		this.#afterAttributeUpdated = options.afterAttributeUpdated;
+		this.#beforePropertyUpdated = options.beforePropertyUpdated;
+		this.#afterPropertyUpdated = options.afterPropertyUpdated;
 		Object.freeze(this);
 	}
 	morph(node, reference) {
@@ -86,20 +107,20 @@ class Morph {
 		}
 	}
 	#morphMatchingElementNode(node, reference) {
-		if (!(this.#options.beforeNodeMorphed?.(node, reference) ?? true)) return;
+		if (!(this.#beforeNodeMorphed?.(node, reference) ?? true)) return;
 		if (node.hasAttributes() || reference.hasAttributes()) this.#morphAttributes(node, reference);
 		if (isHead(node)) {
 			this.#morphHead(node, reference);
 		} else if (node.hasChildNodes() || reference.hasChildNodes()) this.#morphChildNodes(node, reference);
-		this.#options.afterNodeMorphed?.(node, reference);
+		this.#afterNodeMorphed?.(node, reference);
 	}
 	#morphOtherNode(node, reference) {
-		if (!(this.#options.beforeNodeMorphed?.(node, reference) ?? true)) return;
+		if (!(this.#beforeNodeMorphed?.(node, reference) ?? true)) return;
 		if (node.nodeType === reference.nodeType && node.nodeValue !== null && reference.nodeValue !== null) {
 			// Handle text nodes, comments, and CDATA sections.
 			this.#updateProperty(node, "nodeValue", reference.nodeValue);
 		} else this.#replaceNode(node, reference.cloneNode(true));
-		this.#options.afterNodeMorphed?.(node, reference);
+		this.#afterNodeMorphed?.(node, reference);
 	}
 	#morphHead(node, reference) {
 		const refChildNodesMap = new Map();
@@ -118,17 +139,17 @@ class Morph {
 	#morphAttributes(element, reference) {
 		// Remove any excess attributes from the element that aren’t present in the reference.
 		for (const { name, value } of element.attributes) {
-			if (!reference.hasAttribute(name) && (this.#options.beforeAttributeUpdated?.(element, name, null) ?? true)) {
+			if (!reference.hasAttribute(name) && (this.#beforeAttributeUpdated?.(element, name, null) ?? true)) {
 				element.removeAttribute(name);
-				this.#options.afterAttributeUpdated?.(element, name, value);
+				this.#afterAttributeUpdated?.(element, name, value);
 			}
 		}
 		// Copy attributes from the reference to the element, if they don’t already match.
 		for (const { name, value } of reference.attributes) {
 			const previousValue = element.getAttribute(name);
-			if (previousValue !== value && (this.#options.beforeAttributeUpdated?.(element, name, value) ?? true)) {
+			if (previousValue !== value && (this.#beforeAttributeUpdated?.(element, name, value) ?? true)) {
 				element.setAttribute(name, value);
-				this.#options.afterAttributeUpdated?.(element, name, previousValue);
+				this.#afterAttributeUpdated?.(element, name, previousValue);
 			}
 		}
 		// For certain types of elements, we need to do some extra work to ensure
@@ -139,8 +160,8 @@ class Morph {
 			this.#updateProperty(element, "indeterminate", reference.indeterminate);
 			if (
 				element.type !== "file" &&
-				!(this.#options.ignoreActiveValue && document.activeElement === element) &&
-				!(this.#options.preserveModifiedValues && element.name === reference.name && element.value !== element.defaultValue)
+				!(this.#ignoreActiveValue && document.activeElement === element) &&
+				!(this.#preserveModifiedValues && element.name === reference.name && element.value !== element.defaultValue)
 			) {
 				this.#updateProperty(element, "value", reference.value);
 			}
@@ -149,8 +170,8 @@ class Morph {
 		} else if (
 			isTextArea(element) &&
 			isTextArea(reference) &&
-			!(this.#options.ignoreActiveValue && document.activeElement === element) &&
-			!(this.#options.preserveModifiedValues && element.name === reference.name && element.value !== element.defaultValue)
+			!(this.#ignoreActiveValue && document.activeElement === element) &&
+			!(this.#preserveModifiedValues && element.name === reference.name && element.value !== element.defaultValue)
 		) {
 			this.#updateProperty(element, "value", reference.value);
 			const text = element.firstElementChild;
@@ -183,7 +204,7 @@ class Morph {
 		}
 	}
 	#morphChildElement(child, reference, parent) {
-		if (!(this.#options.beforeNodeMorphed?.(child, reference) ?? true)) return;
+		if (!(this.#beforeNodeMorphed?.(child, reference) ?? true)) return;
 		const refIdSet = this.#idMap.get(reference);
 		// Generate the array in advance of the loop
 		const refSetArray = refIdSet ? [...refIdSet] : [];
@@ -216,25 +237,25 @@ class Morph {
 			this.#morphNode(nextMatchByTagName, reference);
 		} else {
 			const newNode = reference.cloneNode(true);
-			if (this.#options.beforeNodeAdded?.(newNode) ?? true) {
+			if (this.#beforeNodeAdded?.(newNode) ?? true) {
 				this.#insertBefore(parent, newNode, child);
-				this.#options.afterNodeAdded?.(newNode);
+				this.#afterNodeAdded?.(newNode);
 			}
 		}
-		this.#options.afterNodeMorphed?.(child, reference);
+		this.#afterNodeMorphed?.(child, reference);
 	}
 	#updateProperty(node, propertyName, newValue) {
 		const previousValue = node[propertyName];
-		if (previousValue !== newValue && (this.#options.beforePropertyUpdated?.(node, propertyName, newValue) ?? true)) {
+		if (previousValue !== newValue && (this.#beforePropertyUpdated?.(node, propertyName, newValue) ?? true)) {
 			node[propertyName] = newValue;
-			this.#options.afterPropertyUpdated?.(node, propertyName, previousValue);
+			this.#afterPropertyUpdated?.(node, propertyName, previousValue);
 		}
 	}
 	#replaceNode(node, newNode) {
-		if ((this.#options.beforeNodeRemoved?.(node) ?? true) && (this.#options.beforeNodeAdded?.(newNode) ?? true)) {
+		if ((this.#beforeNodeRemoved?.(node) ?? true) && (this.#beforeNodeAdded?.(newNode) ?? true)) {
 			node.replaceWith(newNode);
-			this.#options.afterNodeAdded?.(newNode);
-			this.#options.afterNodeRemoved?.(node);
+			this.#afterNodeAdded?.(newNode);
+			this.#afterNodeRemoved?.(node);
 		}
 	}
 	#insertBefore(parent, node, insertionPoint) {
@@ -256,15 +277,15 @@ class Morph {
 		parent.insertBefore(node, insertionPoint);
 	}
 	#appendChild(node, newNode) {
-		if (this.#options.beforeNodeAdded?.(newNode) ?? true) {
+		if (this.#beforeNodeAdded?.(newNode) ?? true) {
 			node.appendChild(newNode);
-			this.#options.afterNodeAdded?.(newNode);
+			this.#afterNodeAdded?.(newNode);
 		}
 	}
 	#removeNode(node) {
-		if (this.#options.beforeNodeRemoved?.(node) ?? true) {
+		if (this.#beforeNodeRemoved?.(node) ?? true) {
 			node.remove();
-			this.#options.afterNodeRemoved?.(node);
+			this.#afterNodeRemoved?.(node);
 		}
 	}
 }
