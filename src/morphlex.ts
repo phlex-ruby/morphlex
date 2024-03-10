@@ -1,7 +1,6 @@
 type IdSet = Set<string>;
 type IdMap = WeakMap<ReadonlyNode<Node>, IdSet>;
 type SensivityMap = WeakMap<ReadonlyNode<Node>, number>;
-type ObjectKey = string | number | symbol;
 
 // Maps to a type that can only read properties
 type StrongReadonly<T> = { readonly [K in keyof T as T[K] extends Function ? never : K]: T[K] };
@@ -45,8 +44,8 @@ export interface Options {
 	beforeAttributeUpdated?: (element: Element, attributeName: string, newValue: string | null) => boolean;
 	afterAttributeUpdated?: (element: Element, attributeName: string, previousValue: string | null) => void;
 
-	beforePropertyUpdated?: (node: Node, propertyName: ObjectKey, newValue: unknown) => boolean;
-	afterPropertyUpdated?: (node: Node, propertyName: ObjectKey, previousValue: unknown) => void;
+	beforePropertyUpdated?: (node: Node, propertyName: PropertyKey, newValue: unknown) => boolean;
+	afterPropertyUpdated?: (node: Node, propertyName: PropertyKey, previousValue: unknown) => void;
 }
 
 export function morph(node: ChildNode, reference: ChildNode | string, options: Options = {}): void {

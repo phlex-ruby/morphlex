@@ -1,4 +1,3 @@
-type ObjectKey = string | number | symbol;
 export interface Options {
 	ignoreActiveValue?: boolean;
 	preserveModifiedValues?: boolean;
@@ -10,8 +9,7 @@ export interface Options {
 	afterNodeRemoved?: (node: Node) => void;
 	beforeAttributeUpdated?: (element: Element, attributeName: string, newValue: string | null) => boolean;
 	afterAttributeUpdated?: (element: Element, attributeName: string, previousValue: string | null) => void;
-	beforePropertyUpdated?: (node: Node, propertyName: ObjectKey, newValue: unknown) => boolean;
-	afterPropertyUpdated?: (node: Node, propertyName: ObjectKey, previousValue: unknown) => void;
+	beforePropertyUpdated?: (node: Node, propertyName: PropertyKey, newValue: unknown) => boolean;
+	afterPropertyUpdated?: (node: Node, propertyName: PropertyKey, previousValue: unknown) => void;
 }
 export declare function morph(node: ChildNode, reference: ChildNode | string, options?: Options): void;
-export {};
