@@ -271,7 +271,8 @@ function isTextArea(element) {
 function isHead(element) {
 	return element.localName === "head";
 }
+const parentNodeTypes = new Set([1, 9, 11]);
 function isParentNode(node) {
-	return node.nodeType === 1 || node.nodeType === 9 || node.nodeType === 11;
+	return parentNodeTypes.has(node.nodeType);
 }
 //# sourceMappingURL=morphlex.js.map

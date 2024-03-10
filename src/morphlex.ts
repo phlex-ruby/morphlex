@@ -399,8 +399,10 @@ function isHead(element: Element | ReadonlyNode<Element>): boolean {
 	return element.localName === "head";
 }
 
+const parentNodeTypes = new Set([1, 9, 11]);
+
 function isParentNode(node: Node): node is ParentNode;
 function isParentNode(node: ReadonlyNode<Node>): node is ReadonlyNode<ParentNode>;
 function isParentNode(node: Node | ReadonlyNode<Node>): boolean {
-	return node.nodeType === 1 || node.nodeType === 9 || node.nodeType === 11;
+	return parentNodeTypes.has(node.nodeType);
 }
