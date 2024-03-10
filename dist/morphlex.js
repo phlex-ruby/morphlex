@@ -78,19 +78,28 @@ class Morph {
 		}
 	}
 	// This is where we actually morph the nodes. The `morph` function (above) exists only to set up the `idMap`.
-	#morphNode(node, ref) {
-		if (!(this.#options.beforeNodeMorphed?.(node, ref) ?? true)) return;
-		if (isElement(node) && isElement(ref) && node.localName === ref.localName) {
-			if (node.hasAttributes() || ref.hasAttributes()) this.#morphAttributes(node, ref);
-			if (isHead(node)) this.#morphHead(node, ref);
-			else if (node.hasChildNodes() || ref.hasChildNodes()) this.#morphChildNodes(node, ref);
+	#morphNode(node, reference) {
+		if (isElement(node) && isElement(reference) && node.localName === reference.localName) {
+			this.#morphMatchingElementNode(node, reference);
 		} else {
-			if (node.nodeType === ref.nodeType && node.nodeValue !== null && ref.nodeValue !== null) {
-				// Handle text nodes, comments, and CDATA sections.
-				this.#updateProperty(node, "nodeValue", ref.nodeValue);
-			} else this.#replaceNode(node, ref.cloneNode(true));
+			this.#morphOtherNode(node, reference);
 		}
-		this.#options.afterNodeMorphed?.(node, ref);
+	}
+	#morphMatchingElementNode(node, reference) {
+		if (!(this.#options.beforeNodeMorphed?.(node, reference) ?? true)) return;
+		if (node.hasAttributes() || reference.hasAttributes()) this.#morphAttributes(node, reference);
+		if (isHead(node)) {
+			this.#morphHead(node, reference);
+		} else if (node.hasChildNodes() || reference.hasChildNodes()) this.#morphChildNodes(node, reference);
+		this.#options.afterNodeMorphed?.(node, reference);
+	}
+	#morphOtherNode(node, reference) {
+		if (!(this.#options.beforeNodeMorphed?.(node, reference) ?? true)) return;
+		if (node.nodeType === reference.nodeType && node.nodeValue !== null && reference.nodeValue !== null) {
+			// Handle text nodes, comments, and CDATA sections.
+			this.#updateProperty(node, "nodeValue", reference.nodeValue);
+		} else this.#replaceNode(node, reference.cloneNode(true));
+		this.#options.afterNodeMorphed?.(node, reference);
 	}
 	#morphHead(node, reference) {
 		const refChildNodesMap = new Map();
@@ -106,16 +115,16 @@ class Morph {
 		// Any remaining nodes in the map should be appended to the head.
 		for (const refChild of refChildNodesMap.values()) this.#appendChild(node, refChild.cloneNode(true));
 	}
-	#morphAttributes(element, ref) {
+	#morphAttributes(element, reference) {
 		// Remove any excess attributes from the element that aren’t present in the reference.
 		for (const { name, value } of element.attributes) {
-			if (!ref.hasAttribute(name) && (this.#options.beforeAttributeUpdated?.(element, name, null) ?? true)) {
+			if (!reference.hasAttribute(name) && (this.#options.beforeAttributeUpdated?.(element, name, null) ?? true)) {
 				element.removeAttribute(name);
 				this.#options.afterAttributeUpdated?.(element, name, value);
 			}
 		}
 		// Copy attributes from the reference to the element, if they don’t already match.
-		for (const { name, value } of ref.attributes) {
+		for (const { name, value } of reference.attributes) {
 			const previousValue = element.getAttribute(name);
 			if (previousValue !== value && (this.#options.beforeAttributeUpdated?.(element, name, value) ?? true)) {
 				element.setAttribute(name, value);
@@ -124,35 +133,43 @@ class Morph {
 		}
 		// For certain types of elements, we need to do some extra work to ensure
 		// the element’s state matches the reference elements’ state.
-		if (isInput(element) && isInput(ref)) {
-			this.#updateProperty(element, "checked", ref.checked);
-			this.#updateProperty(element, "disabled", ref.disabled);
-			this.#updateProperty(element, "indeterminate", ref.indeterminate);
+		if (isInput(element) && isInput(reference)) {
+			this.#updateProperty(element, "checked", reference.checked);
+			this.#updateProperty(element, "disabled", reference.disabled);
+			this.#updateProperty(element, "indeterminate", reference.indeterminate);
 			if (
 				element.type !== "file" &&
 				!(this.#options.ignoreActiveValue && document.activeElement === element) &&
-				!(this.#options.preserveModifiedValues && element.name === ref.name && element.value !== element.defaultValue)
-			)
-				this.#updateProperty(element, "value", ref.value);
-		} else if (isOption(element) && isOption(ref)) this.#updateProperty(element, "selected", ref.selected);
-		else if (isTextArea(element) && isTextArea(ref)) {
-			this.#updateProperty(element, "value", ref.value);
+				!(this.#options.preserveModifiedValues && element.name === reference.name && element.value !== element.defaultValue)
+			) {
+				this.#updateProperty(element, "value", reference.value);
+			}
+		} else if (isOption(element) && isOption(reference)) {
+			this.#updateProperty(element, "selected", reference.selected);
+		} else if (
+			isTextArea(element) &&
+			isTextArea(reference) &&
+			!(this.#options.ignoreActiveValue && document.activeElement === element) &&
+			!(this.#options.preserveModifiedValues && element.name === reference.name && element.value !== element.defaultValue)
+		) {
+			this.#updateProperty(element, "value", reference.value);
 			const text = element.firstElementChild;
-			if (text) this.#updateProperty(text, "textContent", ref.value);
+			if (text) this.#updateProperty(text, "textContent", reference.value);
 		}
 	}
 	// Iterates over the child nodes of the reference element, morphing the main element’s child nodes to match.
-	#morphChildNodes(element, ref) {
+	#morphChildNodes(element, reference) {
 		const childNodes = element.childNodes;
-		const refChildNodes = ref.childNodes;
+		const refChildNodes = reference.childNodes;
 		for (let i = 0; i < refChildNodes.length; i++) {
 			const child = childNodes[i];
 			const refChild = refChildNodes[i];
 			if (child && refChild) {
 				if (isElement(child) && isElement(refChild) && child.localName === refChild.localName) {
-					if (isHead(child)) this.#morphHead(child, refChild);
-					else this.#morphChildElement(child, refChild, element);
-				} else this.#morphNode(child, refChild); // TODO: performance optimization here
+					if (isHead(child)) {
+						this.#morphHead(child, refChild);
+					} else this.#morphChildElement(child, refChild, element);
+				} else this.#morphOtherNode(child, refChild);
 			} else if (refChild) {
 				this.#appendChild(element, refChild.cloneNode(true));
 			} else if (child) {
@@ -165,9 +182,9 @@ class Morph {
 			if (child) this.#removeNode(child);
 		}
 	}
-	#morphChildElement(child, ref, parent) {
-		if (!(this.#options.beforeNodeMorphed?.(child, ref) ?? true)) return;
-		const refIdSet = this.#idMap.get(ref);
+	#morphChildElement(child, reference, parent) {
+		if (!(this.#options.beforeNodeMorphed?.(child, reference) ?? true)) return;
+		const refIdSet = this.#idMap.get(reference);
 		// Generate the array in advance of the loop
 		const refSetArray = refIdSet ? [...refIdSet] : [];
 		let currentNode = child;
@@ -176,18 +193,18 @@ class Morph {
 		while (currentNode) {
 			if (isElement(currentNode)) {
 				const id = currentNode.id;
-				if (!nextMatchByTagName && currentNode.localName === ref.localName) {
+				if (!nextMatchByTagName && currentNode.localName === reference.localName) {
 					nextMatchByTagName = currentNode;
 				}
 				if (id !== "") {
-					if (id === ref.id) {
+					if (id === reference.id) {
 						this.#insertBefore(parent, currentNode, child);
-						return this.#morphNode(currentNode, ref);
+						return this.#morphNode(currentNode, reference);
 					} else {
 						const currentIdSet = this.#idMap.get(currentNode);
 						if (currentIdSet && refSetArray.some((it) => currentIdSet.has(it))) {
 							this.#insertBefore(parent, currentNode, child);
-							return this.#morphNode(currentNode, ref);
+							return this.#morphNode(currentNode, reference);
 						}
 					}
 				}
@@ -196,15 +213,15 @@ class Morph {
 		}
 		if (nextMatchByTagName) {
 			this.#insertBefore(parent, nextMatchByTagName, child);
-			this.#morphNode(nextMatchByTagName, ref);
+			this.#morphNode(nextMatchByTagName, reference);
 		} else {
-			const newNode = ref.cloneNode(true);
+			const newNode = reference.cloneNode(true);
 			if (this.#options.beforeNodeAdded?.(newNode) ?? true) {
 				this.#insertBefore(parent, newNode, child);
 				this.#options.afterNodeAdded?.(newNode);
 			}
 		}
-		this.#options.afterNodeMorphed?.(child, ref);
+		this.#options.afterNodeMorphed?.(child, reference);
 	}
 	#updateProperty(node, propertyName, newValue) {
 		const previousValue = node[propertyName];
@@ -232,9 +249,7 @@ class Morph {
 						parent.insertBefore(previousNode, node.nextSibling);
 						if (previousNode === insertionPoint) return;
 						previousNode = node.previousSibling;
-					} else {
-						break;
-					}
+					} else break;
 				}
 			}
 		}
