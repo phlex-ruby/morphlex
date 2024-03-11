@@ -1,6 +1,5 @@
 import { fixture, html, expect } from "@open-wc/testing";
 import { morph } from "../";
-import { nextFrame } from "./helpers";
 
 // adapted from: https://github.com/alpinejs/alpine/blob/891d68503960a39826e89f2f666d9b1e7ce3f0c9/tests/jest/morph/external.spec.js
 describe("alpine-morph", () => {
@@ -10,8 +9,6 @@ describe("alpine-morph", () => {
 
 		morph(a, b);
 
-		await nextFrame();
-
 		expect(a.outerHTML).to.equal(b.outerHTML);
 	});
 
@@ -20,8 +17,6 @@ describe("alpine-morph", () => {
 		const b = await fixture(html`<div><span>foo</span></div>`);
 
 		morph(a, b);
-
-		await nextFrame();
 
 		expect(a.outerHTML).to.equal(b.outerHTML);
 	});
@@ -37,8 +32,6 @@ describe("alpine-morph", () => {
 
 		morph(a, b);
 
-		await nextFrame();
-
 		expect(a.outerHTML).to.equal(b.outerHTML);
 	});
 
@@ -53,8 +46,6 @@ describe("alpine-morph", () => {
 
 		morph(a, b);
 
-		await nextFrame();
-
 		expect(a.outerHTML).to.equal(b.outerHTML);
 	});
 
@@ -63,8 +54,6 @@ describe("alpine-morph", () => {
 		const b = await fixture(html`<div foo="bar">foo</div>`);
 
 		morph(a, b);
-
-		await nextFrame();
 
 		expect(a.outerHTML).to.equal(b.outerHTML);
 	});
@@ -75,8 +64,6 @@ describe("alpine-morph", () => {
 
 		morph(a, b);
 
-		await nextFrame();
-
 		expect(a.outerHTML).to.equal(b.outerHTML);
 	});
 
@@ -85,8 +72,6 @@ describe("alpine-morph", () => {
 		const b = await fixture(html`<div foo="baz">foo</div>`);
 
 		morph(a, b);
-
-		await nextFrame();
 
 		expect(a.outerHTML).to.equal(b.outerHTML);
 	});

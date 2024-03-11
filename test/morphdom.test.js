@@ -1,6 +1,5 @@
 import { fixture, html, expect } from "@open-wc/testing";
 import { morph } from "../";
-import { nextFrame } from "./helpers";
 
 // adapted from: https://github.com/patrick-steele-idem/morphdom/blob/e98d69e125cda814dd6d1ba71d6c7c9d93edc01e/test/browser/test.js
 describe("morphdom", () => {
@@ -9,7 +8,6 @@ describe("morphdom", () => {
 		const b = await fixture(html`<div class="bar"></div>`);
 
 		morph(a, b);
-		await nextFrame();
 
 		expect(a.outerHTML).to.equal(b.outerHTML);
 		expect(a.className).to.equal("bar");
@@ -25,7 +23,6 @@ describe("morphdom", () => {
 		const b = await fixture(html`<body></body>`);
 
 		morph(a, b);
-		await nextFrame();
 
 		expect(a.outerHTML).to.equal(b.outerHTML);
 		expect(a.nodeName).to.equal("BODY");
@@ -37,7 +34,6 @@ describe("morphdom", () => {
 		const b = await fixture(html`<div id="el-1" class="bar"><div id="el-1">B</div></div>`);
 
 		morph(a, b);
-		await nextFrame();
 
 		expect(a.outerHTML).to.equal(b.outerHTML);
 		expect(a.className).to.equal("bar");
@@ -51,7 +47,6 @@ describe("morphdom", () => {
 		const b = await fixture(html`<div id="el-1" class="zoo"><div id="el-inner">B</div></div>`);
 
 		morph(a, b);
-		await nextFrame();
 
 		expect(a.outerHTML).to.equal(b.outerHTML);
 		expect(a.className).to.equal("zoo");
@@ -72,7 +67,6 @@ describe("morphdom", () => {
 		const b = await fixture(html`<div><p id="hi" class="foo">A</p></div>`);
 
 		morph(a, b);
-		await nextFrame();
 
 		expect(a.outerHTML).to.equal(b.outerHTML);
 		expect(a.children.length).to.equal(2);
@@ -95,7 +89,6 @@ describe("morphdom", () => {
 		const b = await fixture(html`<div><h1 id="matching" class="baz">C</h1></div>`);
 
 		morph(a, b);
-		await nextFrame();
 
 		expect(a.outerHTML).to.equal(b.outerHTML);
 		expect(a.children.length).to.equal(1);
@@ -109,7 +102,6 @@ describe("morphdom", () => {
 		const b = await fixture(html`<input type="text" value="Hello World 2" />`);
 
 		morph(a, b);
-		await nextFrame();
 
 		expect(a.outerHTML).to.equal(b.outerHTML);
 		expect(a.value).to.equal("Hello World 2");
@@ -121,7 +113,6 @@ describe("morphdom", () => {
 		const b = await fixture(html`<input type="text" checked="" />`);
 
 		morph(a, b);
-		await nextFrame();
 
 		expect(a.outerHTML).to.equal(b.outerHTML);
 		expect(a.checked).to.equal(true);
@@ -135,7 +126,6 @@ describe("morphdom", () => {
 		b.checked = true;
 
 		morph(a, b);
-		await nextFrame();
 
 		expect(a.outerHTML).to.equal(b.outerHTML);
 		expect(a.checked).to.equal(true);

@@ -18,8 +18,8 @@
 	"scripts": {
 		"test": "web-test-runner test/**/*.test.js --node-resolve",
 		"t": "web-test-runner --node-resolve",
-		"build": "tsc && prettier --write ./src ./dist",
-		"watch": "tsc -w",
+		"build": "npx tsc && prettier --write ./src ./dist",
+		"watch": "npx tsc -w",
 		"test:watch": "npm run test -- --watch",
 		"lint": "prettier --check ./src ./dist ./test",
 		"minify": "terser dist/morphlex.js -o dist/morphlex.min.js --config-file terser-config.json",
@@ -34,7 +34,7 @@
 		"gzip-size-cli": "^5.1.0",
 		"prettier": "^3.2.5",
 		"terser": "^5.28.1",
-		"typescript": "^5.3.3",
+		"typescript": "^5.4.2",
 		"typescript-eslint": "^7.0.2"
 	}
 }

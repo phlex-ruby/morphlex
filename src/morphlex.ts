@@ -5,6 +5,12 @@ type SensivityMap = WeakMap<ReadonlyNode<Node>, number>;
 // Maps to a type that can only read properties
 type StrongReadonly<T> = { readonly [K in keyof T as T[K] extends Function ? never : K]: T[K] };
 
+declare const brand: unique symbol;
+type Branded<T, B extends string> = T & { [brand]: B };
+
+type NodeReferencePair<N extends Node> = Readonly<[N, ReadonlyNode<N>]>;
+type MatchingElementReferencePair<E extends Element> = Branded<NodeReferencePair<E>, "MatchingElementPair">;
+
 // Maps a Node to a type limited to read-only properties and methods for that Node
 type ReadonlyNode<T extends Node> =
 	| T
@@ -55,10 +61,10 @@ export function morph(node: ChildNode, reference: ChildNode | string, options: O
 
 	if (isElement(node)) {
 		node.ariaBusy = "true";
-		new Morph(options).morph(node, reference);
+		new Morph(options).morph([node, reference]);
 		node.ariaBusy = null;
 	} else {
-		new Morph(options).morph(node, reference);
+		new Morph(options).morph([node, reference]);
 	}
 }
 
@@ -99,19 +105,28 @@ class Morph {
 		Object.freeze(this);
 	}
 
-	morph(node: ChildNode, reference: ChildNode): void {
-		if (isParentNode(node) && isParentNode(reference)) {
-			this.#mapIdSets(node);
-			this.#mapIdSets(reference);
-			this.#mapSensivity(node);
+	morph(pair: NodeReferencePair<ChildNode>): void {
+		if (isParentNodePair(pair)) this.#buildMaps(pair);
+		this.#morphNode(pair);
+	}
 
-			Object.freeze(this.#idMap);
-			Object.freeze(this.#sensivityMap);
+	morphInner(pair: NodeReferencePair<Element>): void {
+		this.#buildMaps(pair);
+
+		if (isMatchingElementPair(pair)) {
+			this.#morphMatchingElementContent(pair);
+		} else {
+			throw new Error("You can only do an inner morph with matching elements.");
 		}
+	}
 
-		requestAnimationFrame(() => {
-			this.#morphNode(node, reference);
-		});
+	#buildMaps([node, reference]: NodeReferencePair<ParentNode>): void {
+		this.#mapIdSets(node);
+		this.#mapIdSets(reference);
+		this.#mapSensivity(node);
+
+		Object.freeze(this.#idMap);
+		Object.freeze(this.#sensivityMap);
 	}
 
 	#mapSensivity(node: ReadonlyNode<ParentNode>): void {
@@ -164,38 +179,45 @@ class Morph {
 	}
 
 	// This is where we actually morph the nodes. The `morph` function (above) exists only to set up the `idMap`.
-	#morphNode(node: ChildNode, reference: ReadonlyNode<ChildNode>): void {
-		if (isElement(node) && isElement(reference) && node.localName === reference.localName) {
-			this.#morphMatchingElementNode(node, reference);
-		} else {
-			this.#morphOtherNode(node, reference);
-		}
+	#morphNode(pair: NodeReferencePair<ChildNode>): void {
+		if (isMatchingElementPair(pair)) this.#morphMatchingElementNode(pair);
+		else this.#morphOtherNode(pair);
 	}
 
-	#morphMatchingElementNode(node: Element, reference: ReadonlyNode<Element>): void {
-		if (!(this.#beforeNodeMorphed?.(node, reference as ChildNode) ?? true)) return;
+	#morphMatchingElementNode(pair: MatchingElementReferencePair<Element>): void {
+		const [node, reference] = pair;
 
-		if (node.hasAttributes() || reference.hasAttributes()) this.#morphAttributes(node, reference);
+		if (!(this.#beforeNodeMorphed?.(node, writableNode(reference)) ?? true)) return;
 
-		if (isHead(node)) {
-			this.#morphHead(node, reference as ReadonlyNode<HTMLHeadElement>);
-		} else if (node.hasChildNodes() || reference.hasChildNodes()) this.#morphChildNodes(node, reference);
+		if (node.hasAttributes() || reference.hasAttributes()) this.#morphAttributes(pair);
 
-		this.#afterNodeMorphed?.(node, reference as ChildNode);
+		// TODO: Should use a branded pair here.
+		this.#morphMatchingElementContent(pair);
+
+		this.#afterNodeMorphed?.(node, writableNode(reference));
 	}
 
-	#morphOtherNode(node: ChildNode, reference: ReadonlyNode<ChildNode>): void {
-		if (!(this.#beforeNodeMorphed?.(node, reference as ChildNode) ?? true)) return;
+	#morphOtherNode([node, reference]: NodeReferencePair<ChildNode>): void {
+		if (!(this.#beforeNodeMorphed?.(node, writableNode(reference)) ?? true)) return;
 
 		if (node.nodeType === reference.nodeType && node.nodeValue !== null && reference.nodeValue !== null) {
 			// Handle text nodes, comments, and CDATA sections.
 			this.#updateProperty(node, "nodeValue", reference.nodeValue);
 		} else this.#replaceNode(node, reference.cloneNode(true));
 
-		this.#afterNodeMorphed?.(node, reference as ChildNode);
+		this.#afterNodeMorphed?.(node, writableNode(reference));
 	}
 
-	#morphHead(node: HTMLHeadElement, reference: ReadonlyNode<HTMLHeadElement>): void {
+	#morphMatchingElementContent(pair: MatchingElementReferencePair<Element>): void {
+		const [node, reference] = pair;
+
+		if (isHead(node)) {
+			// We can pass the reference as a head here becuase we know it's the same as the node.
+			this.#morphHeadContents(pair as MatchingElementReferencePair<HTMLHeadElement>);
+		} else if (node.hasChildNodes() || reference.hasChildNodes()) this.#morphChildNodes(pair);
+	}
+
+	#morphHeadContents([node, reference]: MatchingElementReferencePair<HTMLHeadElement>): void {
 		const refChildNodesMap: Map<string, ReadonlyNode<Element>> = new Map();
 
 		// Generate a map of the reference head element’s child nodes, keyed by their outerHTML.
@@ -214,7 +236,7 @@ class Morph {
 		for (const refChild of refChildNodesMap.values()) this.#appendChild(node, refChild.cloneNode(true));
 	}
 
-	#morphAttributes(element: Element, reference: ReadonlyNode<Element>): void {
+	#morphAttributes([element, reference]: MatchingElementReferencePair<Element>): void {
 		// Remove any excess attributes from the element that aren’t present in the reference.
 		for (const { name, value } of element.attributes) {
 			if (!reference.hasAttribute(name) && (this.#beforeAttributeUpdated?.(element, name, null) ?? true)) {
@@ -261,7 +283,9 @@ class Morph {
 	}
 
 	// Iterates over the child nodes of the reference element, morphing the main element’s child nodes to match.
-	#morphChildNodes(element: Element, reference: ReadonlyNode<Element>): void {
+	#morphChildNodes(pair: MatchingElementReferencePair<Element>): void {
+		const [element, reference] = pair;
+
 		const childNodes = element.childNodes;
 		const refChildNodes = reference.childNodes;
 
@@ -270,11 +294,15 @@ class Morph {
 			const refChild = refChildNodes[i] as ReadonlyNode<ChildNode> | null;
 
 			if (child && refChild) {
-				if (isElement(child) && isElement(refChild) && child.localName === refChild.localName) {
-					if (isHead(child)) {
-						this.#morphHead(child, refChild as ReadonlyNode<HTMLHeadElement>);
-					} else this.#morphChildElement(child, refChild, element);
-				} else this.#morphOtherNode(child, refChild);
+				const pair: NodeReferencePair<ChildNode> = [child, refChild];
+
+				if (isMatchingElementPair(pair)) {
+					if (isHead(pair[0])) {
+						this.#morphHeadContents(pair as MatchingElementReferencePair<HTMLHeadElement>);
+					} else {
+						this.#morphChildElement(pair, element);
+					}
+				} else this.#morphOtherNode(pair);
 			} else if (refChild) {
 				this.#appendChild(element, refChild.cloneNode(true));
 			} else if (child) {
@@ -289,8 +317,8 @@ class Morph {
 		}
 	}
 
-	#morphChildElement(child: Element, reference: ReadonlyNode<Element>, parent: Element): void {
-		if (!(this.#beforeNodeMorphed?.(child, reference as ChildNode) ?? true)) return;
+	#morphChildElement([child, reference]: MatchingElementReferencePair<Element>, parent: Element): void {
+		if (!(this.#beforeNodeMorphed?.(child, writableNode(reference)) ?? true)) return;
 
 		const refIdSet = this.#idMap.get(reference);
 
@@ -312,13 +340,13 @@ class Morph {
 				if (id !== "") {
 					if (id === reference.id) {
 						this.#insertBefore(parent, currentNode, child);
-						return this.#morphNode(currentNode, reference);
+						return this.#morphNode([currentNode, reference]);
 					} else {
 						const currentIdSet = this.#idMap.get(currentNode);
 
 						if (currentIdSet && refSetArray.some((it) => currentIdSet.has(it))) {
 							this.#insertBefore(parent, currentNode, child);
-							return this.#morphNode(currentNode, reference);
+							return this.#morphNode([currentNode, reference]);
 						}
 					}
 				}
@@ -329,7 +357,7 @@ class Morph {
 
 		if (nextMatchByTagName) {
 			this.#insertBefore(parent, nextMatchByTagName, child);
-			this.#morphNode(nextMatchByTagName, reference);
+			this.#morphNode([nextMatchByTagName, reference]);
 		} else {
 			const newNode = reference.cloneNode(true);
 			if (this.#beforeNodeAdded?.(newNode) ?? true) {
@@ -338,7 +366,7 @@ class Morph {
 			}
 		}
 
-		this.#afterNodeMorphed?.(child, reference as ChildNode);
+		this.#afterNodeMorphed?.(child, writableNode(reference));
 	}
 
 	#updateProperty<N extends Node, P extends keyof N>(node: N, propertyName: P, newValue: N[P]): void {
@@ -401,6 +429,20 @@ class Morph {
 // We cannot use `instanceof` when nodes might be from different documents,
 // so we use type guards instead. This keeps TypeScript happy, while doing
 // the necessary checks at runtime.
+
+function writableNode<N extends Node>(node: ReadonlyNode<N>): N {
+	return node as N;
+}
+
+function isMatchingElementPair(pair: NodeReferencePair<Node>): pair is MatchingElementReferencePair<Element> {
+	const [a, b] = pair;
+	return isElement(a) && isElement(b) && a.localName === b.localName;
+}
+
+function isParentNodePair(pair: NodeReferencePair<Node>): pair is NodeReferencePair<ParentNode> {
+	const [a, b] = pair;
+	return isParentNode(a) && isParentNode(b);
+}
 
 function isElement(node: Node): node is Element;
 function isElement(node: ReadonlyNode<Node>): node is ReadonlyNode<Element>;
