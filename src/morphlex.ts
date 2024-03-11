@@ -12,9 +12,9 @@ type NodeReferencePair<N extends Node> = Readonly<[N, ReadonlyNode<N>]>;
 type MatchingElementReferencePair<E extends Element> = Branded<NodeReferencePair<E>, "MatchingElementPair">;
 
 // Maps a Node to a type limited to read-only properties and methods for that Node
-type ReadonlyNode<T extends Node> =
-	| T
-	| (StrongReadonly<T> & {
+type ReadonlyNode<N extends Node> =
+	| N
+	| (StrongReadonly<N> & {
 			readonly cloneNode: (deep: true) => Node;
 			readonly childNodes: ReadonlyNodeList<ChildNode>;
 			readonly querySelectorAll: (query: string) => ReadonlyNodeList<Element>;
@@ -26,12 +26,12 @@ type ReadonlyNode<T extends Node> =
 	  });
 
 // Maps a node to a read-only node list of nodes of that type
-type ReadonlyNodeList<T extends Node> =
-	| NodeListOf<T>
+type ReadonlyNodeList<N extends Node> =
+	| NodeListOf<N>
 	| {
-			[Symbol.iterator](): IterableIterator<ReadonlyNode<T>>;
-			readonly [index: number]: ReadonlyNode<T>;
-			readonly length: NodeListOf<T>["length"];
+			[Symbol.iterator](): IterableIterator<ReadonlyNode<N>>;
+			readonly [index: number]: ReadonlyNode<N>;
+			readonly length: NodeListOf<N>["length"];
 	  };
 
 interface Options {
