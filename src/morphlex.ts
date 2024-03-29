@@ -131,7 +131,10 @@ class Morph {
 
 	#mapSensivity(node: ReadonlyNode<ParentNode>): void {
 		const sensitiveElements = node.querySelectorAll("audio,canvas,embed,iframe,input,object,textarea,video");
-		for (const sensitiveElement of sensitiveElements) {
+
+		const sensitiveElementsLength = sensitiveElements.length;
+		for (let i = 0; i < sensitiveElementsLength; i++) {
+			const sensitiveElement = sensitiveElements[i];
 			let sensivity = 0;
 
 			if (isInput(sensitiveElement) || isTextArea(sensitiveElement)) {
@@ -161,7 +164,9 @@ class Morph {
 	#mapIdSets(node: ReadonlyNode<ParentNode>): void {
 		const elementsWithIds = node.querySelectorAll("[id]");
 
-		for (const elementWithId of elementsWithIds) {
+		const elementsWithIdsLength = elementsWithIds.length;
+		for (let i = 0; i < elementsWithIdsLength; i++) {
+			const elementWithId = elementsWithIds[i];
 			const id = elementWithId.id;
 
 			// Ignore empty IDs
@@ -221,9 +226,15 @@ class Morph {
 		const refChildNodesMap: Map<string, ReadonlyNode<Element>> = new Map();
 
 		// Generate a map of the reference head element’s child nodes, keyed by their outerHTML.
-		for (const child of reference.children) refChildNodesMap.set(child.outerHTML, child);
+		const referenceChildrenLength = reference.children.length;
+		for (let i = 0; i < referenceChildrenLength; i++) {
+			const child = reference.children[i];
+			refChildNodesMap.set(child.outerHTML, child);
+		}
 
-		for (const child of node.children) {
+		const nodeChildrenLength = node.children.length;
+		for (let i = 0; i < nodeChildrenLength; i++) {
+			const child = node.children[i];
 			const key = child.outerHTML;
 			const refChild = refChildNodesMap.get(key);
 
