@@ -16,7 +16,7 @@ export function morph(node, reference, options = {}) {
 		new Morph(options).morph([node, reference]);
 	}
 }
-export function innerMorph(node, reference, options = {}) {
+export function morphInner(node, reference, options = {}) {
 	if (typeof reference === "string") {
 		const parsedReferenceNode = parseNodeFromString(reference);
 		if (parsedReferenceNode && isElement(parsedReferenceNode)) {
@@ -28,10 +28,10 @@ export function innerMorph(node, reference, options = {}) {
 	if (isElement(node)) {
 		const originalAriaBusy = node.ariaBusy;
 		node.ariaBusy = "true";
-		new Morph(options).innerMorph([node, reference]);
+		new Morph(options).morphInner([node, reference]);
 		node.ariaBusy = originalAriaBusy;
 	} else {
-		new Morph(options).innerMorph([node, reference]);
+		new Morph(options).morphInner([node, reference]);
 	}
 }
 function parseNodeFromString(string) {
@@ -75,7 +75,7 @@ class Morph {
 		if (isParentNodePair(pair)) this.#buildMaps(pair);
 		this.#morphNode(pair);
 	}
-	innerMorph(pair) {
+	morphInner(pair) {
 		if (isMatchingElementPair(pair)) {
 			this.#buildMaps(pair);
 			this.#morphMatchingElementContent(pair);
