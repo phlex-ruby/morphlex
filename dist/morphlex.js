@@ -4,7 +4,7 @@ export function morph(node, reference, options = {}) {
 		template.innerHTML = reference.trim();
 		reference = template.content.firstChild;
 		if (!reference) {
-			throw new Error("The provided string did not contain any nodes.");
+			throw new Error("[Morphlex] The string did not contain any nodes.");
 		}
 	}
 	if (isElement(node)) {
@@ -57,7 +57,7 @@ class Morph {
 			this.#buildMaps(pair);
 			this.#morphMatchingElementContent(pair);
 		} else {
-			throw new Error("You can only do an inner morph with matching elements.");
+			throw new Error("[Morphlex] You can only do an inner morph with matching elements.");
 		}
 	}
 	#buildMaps([node, reference]) {
