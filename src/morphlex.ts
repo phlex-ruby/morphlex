@@ -51,10 +51,11 @@ interface Options {
 
 export function morph(node: ChildNode, reference: ChildNode | string, options: Options = {}): void {
 	if (typeof reference === "string") {
-		const template = document.createElement("template");
-		template.innerHTML = reference.trim();
-		reference = template.content.firstChild as ChildNode;
-		if (!reference) {
+		const parsedReferenceNode = parseNodeFromString(reference);
+
+		if (parsedReferenceNode) {
+			reference = parsedReferenceNode;
+		} else {
 			throw new Error("[Morphlex] The string did not contain any nodes.");
 		}
 	}
@@ -67,6 +68,33 @@ export function morph(node: ChildNode, reference: ChildNode | string, options: O
 	} else {
 		new Morph(options).morph([node, reference]);
 	}
+}
+
+export function innerMorph(node: Element, reference: Element | string, options: Options = {}): void {
+	if (typeof reference === "string") {
+		const parsedReferenceNode = parseNodeFromString(reference);
+
+		if (parsedReferenceNode && isElement(parsedReferenceNode)) {
+			reference = parsedReferenceNode;
+		} else {
+			throw new Error("[Morphlex] The string did not contain any nodes.");
+		}
+	}
+
+	if (isElement(node)) {
+		const originalAriaBusy = node.ariaBusy;
+		node.ariaBusy = "true";
+		new Morph(options).innerMorph([node, reference]);
+		node.ariaBusy = originalAriaBusy;
+	} else {
+		new Morph(options).innerMorph([node, reference]);
+	}
+}
+
+function parseNodeFromString(string: string): ChildNode | null {
+	const parser = new DOMParser();
+	const doc = parser.parseFromString(string, "text/html");
+	return doc.body.firstChild;
 }
 
 class Morph {
@@ -111,7 +139,7 @@ class Morph {
 		this.#morphNode(pair);
 	}
 
-	morphInner(pair: NodeReferencePair<Element>): void {
+	innerMorph(pair: NodeReferencePair<Element>): void {
 		if (isMatchingElementPair(pair)) {
 			this.#buildMaps(pair);
 			this.#morphMatchingElementContent(pair);

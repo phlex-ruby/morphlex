@@ -13,4 +13,5 @@ interface Options {
 	afterPropertyUpdated?: (node: Node, propertyName: PropertyKey, previousValue: unknown) => void;
 }
 export declare function morph(node: ChildNode, reference: ChildNode | string, options?: Options): void;
+export declare function innerMorph(node: Element, reference: Element | string, options?: Options): void;
 export {};

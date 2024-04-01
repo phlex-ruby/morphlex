@@ -1,9 +1,9 @@
 export function morph(node, reference, options = {}) {
 	if (typeof reference === "string") {
-		const template = document.createElement("template");
-		template.innerHTML = reference.trim();
-		reference = template.content.firstChild;
-		if (!reference) {
+		const parsedReferenceNode = parseNodeFromString(reference);
+		if (parsedReferenceNode) {
+			reference = parsedReferenceNode;
+		} else {
 			throw new Error("[Morphlex] The string did not contain any nodes.");
 		}
 	}
@@ -15,6 +15,29 @@ export function morph(node, reference, options = {}) {
 	} else {
 		new Morph(options).morph([node, reference]);
 	}
+}
+export function innerMorph(node, reference, options = {}) {
+	if (typeof reference === "string") {
+		const parsedReferenceNode = parseNodeFromString(reference);
+		if (parsedReferenceNode && isElement(parsedReferenceNode)) {
+			reference = parsedReferenceNode;
+		} else {
+			throw new Error("[Morphlex] The string did not contain any nodes.");
+		}
+	}
+	if (isElement(node)) {
+		const originalAriaBusy = node.ariaBusy;
+		node.ariaBusy = "true";
+		new Morph(options).innerMorph([node, reference]);
+		node.ariaBusy = originalAriaBusy;
+	} else {
+		new Morph(options).innerMorph([node, reference]);
+	}
+}
+function parseNodeFromString(string) {
+	const parser = new DOMParser();
+	const doc = parser.parseFromString(string, "text/html");
+	return doc.body.firstChild;
 }
 class Morph {
 	#idMap;
@@ -52,7 +75,7 @@ class Morph {
 		if (isParentNodePair(pair)) this.#buildMaps(pair);
 		this.#morphNode(pair);
 	}
-	morphInner(pair) {
+	innerMorph(pair) {
 		if (isMatchingElementPair(pair)) {
 			this.#buildMaps(pair);
 			this.#morphMatchingElementContent(pair);
