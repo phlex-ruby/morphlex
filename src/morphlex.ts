@@ -60,9 +60,10 @@ export function morph(node: ChildNode, reference: ChildNode | string, options: O
 	}
 
 	if (isElement(node)) {
+		const originalAriaBusy = node.ariaBusy;
 		node.ariaBusy = "true";
 		new Morph(options).morph([node, reference]);
-		node.ariaBusy = null;
+		node.ariaBusy = originalAriaBusy;
 	} else {
 		new Morph(options).morph([node, reference]);
 	}

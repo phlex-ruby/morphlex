@@ -8,9 +8,10 @@ export function morph(node, reference, options = {}) {
 		}
 	}
 	if (isElement(node)) {
+		const originalAriaBusy = node.ariaBusy;
 		node.ariaBusy = "true";
 		new Morph(options).morph([node, reference]);
-		node.ariaBusy = null;
+		node.ariaBusy = originalAriaBusy;
 	} else {
 		new Morph(options).morph([node, reference]);
 	}
