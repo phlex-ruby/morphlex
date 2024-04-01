@@ -53,8 +53,8 @@ class Morph {
 		this.#morphNode(pair);
 	}
 	morphInner(pair) {
-		this.#buildMaps(pair);
 		if (isMatchingElementPair(pair)) {
+			this.#buildMaps(pair);
 			this.#morphMatchingElementContent(pair);
 		} else {
 			throw new Error("You can only do an inner morph with matching elements.");
