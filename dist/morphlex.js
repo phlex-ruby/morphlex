@@ -1,20 +1,26 @@
 export function morph(node, reference, options = {}) {
-	if (typeof reference === "string") {
-		const template = document.createElement("template");
-		template.innerHTML = reference.trim();
-		reference = template.content.firstChild;
-		if (!reference) {
-			throw new Error("[Morphlex] The string did not contain any nodes.");
-		}
-	}
-	if (isElement(node)) {
-		const originalAriaBusy = node.ariaBusy;
-		node.ariaBusy = "true";
-		new Morph(options).morph([node, reference]);
-		node.ariaBusy = originalAriaBusy;
-	} else {
-		new Morph(options).morph([node, reference]);
-	}
+	new Morph(options).morph([node, reference]);
+}
+export function morphInner(element, reference, options = {}) {
+	new Morph(options).morphInner([element, reference]);
+}
+export function morphFromString(node, reference, options = {}) {
+	morph(node, parseChildNodeFromString(reference), options);
+}
+export function morphInnerFromString(element, reference, options = {}) {
+	morphInner(element, parseElementFromString(reference), options);
+}
+function parseElementFromString(string) {
+	const node = parseChildNodeFromString(string);
+	if (isElement(node)) return node;
+	else throw new Error("[Morphlex] The string was not a valid HTML element.");
+}
+function parseChildNodeFromString(string) {
+	const parser = new DOMParser();
+	const doc = parser.parseFromString(string, "text/html");
+	const firstChild = doc.body.firstChild;
+	if (doc.childNodes.length === 1) return firstChild;
+	else throw new Error("[Morphlex] The string was not a valid HTML node.");
 }
 class Morph {
 	#idMap;
@@ -49,16 +55,28 @@ class Morph {
 		Object.freeze(this);
 	}
 	morph(pair) {
-		if (isParentNodePair(pair)) this.#buildMaps(pair);
-		this.#morphNode(pair);
+		this.#withAriaBusy(pair[0], () => {
+			if (isParentNodePair(pair)) this.#buildMaps(pair);
+			this.#morphNode(pair);
+		});
 	}
 	morphInner(pair) {
-		if (isMatchingElementPair(pair)) {
-			this.#buildMaps(pair);
-			this.#morphMatchingElementContent(pair);
-		} else {
-			throw new Error("[Morphlex] You can only do an inner morph with matching elements.");
-		}
+		this.#withAriaBusy(pair[0], () => {
+			if (isMatchingElementPair(pair)) {
+				this.#buildMaps(pair);
+				this.#morphMatchingElementContent(pair);
+			} else {
+				throw new Error("[Morphlex] You can only do an inner morph with matching elements.");
+			}
+		});
+	}
+	#withAriaBusy(node, block) {
+		if (isElement(node)) {
+			const originalAriaBusy = node.ariaBusy;
+			node.ariaBusy = "true";
+			block();
+			node.ariaBusy = originalAriaBusy;
+		} else block();
 	}
 	#buildMaps([node, reference]) {
 		this.#mapIdSets(node);
@@ -326,8 +344,7 @@ function isMatchingElementPair(pair) {
 	return isElement(a) && isElement(b) && a.localName === b.localName;
 }
 function isParentNodePair(pair) {
-	const [a, b] = pair;
-	return isParentNode(a) && isParentNode(b);
+	return isParentNode(pair[0]) && isParentNode(pair[1]);
 }
 function isElement(node) {
 	return node.nodeType === 1;
