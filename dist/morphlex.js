@@ -333,9 +333,6 @@ class Morph {
 		}
 	}
 }
-// We cannot use `instanceof` when nodes might be from different documents,
-// so we use type guards instead. This keeps TypeScript happy, while doing
-// the necessary checks at runtime.
 function writableNode(node) {
 	return node;
 }
