@@ -1,6 +1,0 @@
-{
-	"name": "@phlex/morphlex",
-	"version": "0.0.11",
-	"exports": "./src/morphlex.ts",
-	"exclude": ["test"]
-}
