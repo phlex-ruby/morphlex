@@ -53,16 +53,16 @@ export function morph(node: ChildNode, reference: ChildNode, options: Options = 
 	new Morph(options).morph([node, reference]);
 }
 
-export function morphInner(node: Element, reference: Element, options: Options = {}): void {
-	new Morph(options).morphInner([node, reference]);
+export function morphInner(element: Element, reference: Element, options: Options = {}): void {
+	new Morph(options).morphInner([element, reference]);
 }
 
 export function morphFromString(node: ChildNode, reference: string, options: Options = {}): void {
 	morph(node, parseChildNodeFromString(reference), options);
 }
 
-export function morphInnerFromString(node: Element, reference: string, options: Options = {}): void {
-	morphInner(node, parseElementFromString(reference), options);
+export function morphInnerFromString(element: Element, reference: string, options: Options = {}): void {
+	morphInner(element, parseElementFromString(reference), options);
 }
 
 function parseElementFromString(string: string): Element {

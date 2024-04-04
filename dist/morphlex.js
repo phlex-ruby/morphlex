@@ -1,14 +1,14 @@
 export function morph(node, reference, options = {}) {
 	new Morph(options).morph([node, reference]);
 }
-export function morphInner(node, reference, options = {}) {
-	new Morph(options).morphInner([node, reference]);
+export function morphInner(element, reference, options = {}) {
+	new Morph(options).morphInner([element, reference]);
 }
 export function morphFromString(node, reference, options = {}) {
 	morph(node, parseChildNodeFromString(reference), options);
 }
-export function morphInnerFromString(node, reference, options = {}) {
-	morphInner(node, parseElementFromString(reference), options);
+export function morphInnerFromString(element, reference, options = {}) {
+	morphInner(element, parseElementFromString(reference), options);
 }
 function parseElementFromString(string) {
 	const node = parseChildNodeFromString(string);
