@@ -49,52 +49,36 @@ interface Options {
 	afterPropertyUpdated?: (node: Node, propertyName: PropertyKey, previousValue: unknown) => void;
 }
 
-export function morph(node: ChildNode, reference: ChildNode | string, options: Options = {}): void {
-	if (typeof reference === "string") {
-		const parsedReferenceNode = parseNodeFromString(reference);
-
-		if (parsedReferenceNode) {
-			reference = parsedReferenceNode;
-		} else {
-			throw new Error("[Morphlex] The string did not contain any nodes.");
-		}
-	}
-
-	if (isElement(node)) {
-		const originalAriaBusy = node.ariaBusy;
-		node.ariaBusy = "true";
-		new Morph(options).morph([node, reference]);
-		node.ariaBusy = originalAriaBusy;
-	} else {
-		new Morph(options).morph([node, reference]);
-	}
+export function morph(node: ChildNode, reference: ChildNode, options: Options = {}): void {
+	new Morph(options).morph([node, reference]);
 }
 
-export function morphInner(node: Element, reference: Element | string, options: Options = {}): void {
-	if (typeof reference === "string") {
-		const parsedReferenceNode = parseNodeFromString(reference);
-
-		if (parsedReferenceNode && isElement(parsedReferenceNode)) {
-			reference = parsedReferenceNode;
-		} else {
-			throw new Error("[Morphlex] The string did not contain any nodes.");
-		}
-	}
-
-	if (isElement(node)) {
-		const originalAriaBusy = node.ariaBusy;
-		node.ariaBusy = "true";
-		new Morph(options).morphInner([node, reference]);
-		node.ariaBusy = originalAriaBusy;
-	} else {
-		new Morph(options).morphInner([node, reference]);
-	}
+export function morphInner(node: Element, reference: Element, options: Options = {}): void {
+	new Morph(options).morphInner([node, reference]);
 }
 
-function parseNodeFromString(string: string): ChildNode | null {
+export function morphFromString(node: ChildNode, reference: string, options: Options = {}): void {
+	morph(node, parseChildNodeFromString(reference), options);
+}
+
+export function morphInnerFromString(node: Element, reference: string, options: Options = {}): void {
+	morphInner(node, parseElementFromString(reference), options);
+}
+
+function parseElementFromString(string: string): Element {
+	const node = parseChildNodeFromString(string);
+
+	if (isElement(node)) return node;
+	else throw new Error("[Morphlex] The string was not a valid HTML element.");
+}
+
+function parseChildNodeFromString(string: string): ChildNode {
 	const parser = new DOMParser();
 	const doc = parser.parseFromString(string, "text/html");
-	return doc.body.firstChild;
+	const firstChild = doc.body.firstChild;
+
+	if (doc.childNodes.length === 1) return firstChild as ChildNode;
+	else throw new Error("[Morphlex] The string was not a valid HTML node.");
 }
 
 class Morph {
@@ -135,17 +119,30 @@ class Morph {
 	}
 
 	morph(pair: NodeReferencePair<ChildNode>): void {
-		if (isParentNodePair(pair)) this.#buildMaps(pair);
-		this.#morphNode(pair);
+		this.#withAriaBusy(pair[0], () => {
+			if (isParentNodePair(pair)) this.#buildMaps(pair);
+			this.#morphNode(pair);
+		});
 	}
 
 	morphInner(pair: NodeReferencePair<Element>): void {
-		if (isMatchingElementPair(pair)) {
-			this.#buildMaps(pair);
-			this.#morphMatchingElementContent(pair);
-		} else {
-			throw new Error("[Morphlex] You can only do an inner morph with matching elements.");
-		}
+		this.#withAriaBusy(pair[0], () => {
+			if (isMatchingElementPair(pair)) {
+				this.#buildMaps(pair);
+				this.#morphMatchingElementContent(pair);
+			} else {
+				throw new Error("[Morphlex] You can only do an inner morph with matching elements.");
+			}
+		});
+	}
+
+	#withAriaBusy(node: Node, block: () => void): void {
+		if (isElement(node)) {
+			const originalAriaBusy = node.ariaBusy;
+			node.ariaBusy = "true";
+			block();
+			node.ariaBusy = originalAriaBusy;
+		} else block();
 	}
 
 	#buildMaps([node, reference]: NodeReferencePair<ParentNode>): void {
@@ -479,8 +476,7 @@ function isMatchingElementPair(pair: NodeReferencePair<Node>): pair is MatchingE
 }
 
 function isParentNodePair(pair: NodeReferencePair<Node>): pair is NodeReferencePair<ParentNode> {
-	const [a, b] = pair;
-	return isParentNode(a) && isParentNode(b);
+	return isParentNode(pair[0]) && isParentNode(pair[1]);
 }
 
 function isElement(node: Node): node is Element;
