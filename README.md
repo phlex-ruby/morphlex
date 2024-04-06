@@ -2,15 +2,15 @@
   <img src="https://github.com/phlex-ruby/morphlex/assets/246692/128ebe6a-bdf3-4b88-8a40-f29df64b3ac8" alt="Morphlex" width="481">
 </p>
 
-Morphlex is a tiny (1.6KB [minified/gzipped](https://www.unpkg.com/morphlex)), optimal DOM morphing library written in TypeScript. DOM morphing is the process of transforming one DOM tree to reflect another, while preserving the state of the original tree and making as few changes as possible.
+Morphlex is a tiny, optimal DOM morphing library written in TypeScript. DOM morphing is the process of transforming one DOM tree to reflect another, while preserving the state of the original tree and making as few changes as possible.
 
-Morphlex uses ID Sets — a concept pioneered by Idiomorph — to match nodes with deeply nested identified elements. It also maps out _sensitive_ elements to avoid moving them around.
+Morphlex uses ID Sets — a concept pioneered by [Idiomorph](https://github.com/bigskysoftware/idiomorph) — to match nodes with deeply nested identified elements. It also maps out _sensitive_ elements to avoid moving them around.
 
 ## ID Sets
 
 Each element is tagged with the set of IDs it contains, allowing for more optimal matching.
 
-Failing an ID Set match, Morphlex will search for the next best match by tag name. If no element can be found, the reference element will be deeply cloned.
+Failing an ID Set match, Morphlex will search for the next best match by tag name. If no element can be found, the reference element will be deeply cloned instead.
 
 ## Node sensitivity
 
