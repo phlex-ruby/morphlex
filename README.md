@@ -47,4 +47,4 @@ The `currentNode` will be morphed into the state of the `referenceNode`. The `re
 If you find a bug or have a feature request, please open an issue. If you want to contribute, please open a pull request.
 
 > [!TIP]
-> Morphlex is written in [TypeScript](https://www.typescriptlang.org) becuase it helps us avoid a whole category of potential bugs. But if you’re more comfortable writing JavaScript, you’re very welcome to open a pull request modifying the `dist/morphlex.js` file directly. I’m happy to take care of the TypeScript conversion myself.
+> Morphlex is written in **[TypeScript](https://www.typescriptlang.org)** becuase it helps us avoid a whole category of potential bugs. If you’re more comfortable writing JavaScript, you’re very welcome to open a Pull Request modifying the `dist/morphlex.js` file. I’m happy to take care of the TypeScript conversion myself. — Joel
