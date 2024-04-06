@@ -16,17 +16,16 @@
 		"url": "https://github.com/sponsors/joeldrapper"
 	},
 	"scripts": {
-		"test": "web-test-runner test/**/*.test.js --node-resolve",
-		"t": "web-test-runner --node-resolve",
-		"build": "npx tsc && prettier --write ./src ./dist",
-		"watch": "npx tsc -w",
-		"test:watch": "npm run test -- --watch",
-		"lint": "prettier --check ./src ./dist ./test",
-		"minify": "terser dist/morphlex.js -o dist/morphlex.min.js --config-file terser-config.json",
-		"prepare": "npm run build && npm run minify",
-		"ship": "npm run prepare && npm run test && npm run lint && npm publish",
-		"format": "prettier --write ./src ./dist ./test",
-		"size": "npm run prepare && gzip-size ./dist/morphlex.min.js --raw --include-original"
+		"test": "bun run web-test-runner test/**/*.test.js --node-resolve",
+		"build": "bun run tsc && bun run prettier --write ./src ./dist",
+		"watch": "bun run tsc -w",
+		"test:watch": "bun run test -- --watch",
+		"lint": "bun run prettier --check ./src ./dist ./test",
+		"minify": "bun run terser dist/morphlex.js -o dist/morphlex.min.js --config-file terser-config.json",
+		"prepare": "bun run build && bun run minify",
+		"ship": "bun run prepare && bun run test && bun run lint && bun run publish",
+		"format": "bun run prettier --write ./src ./dist ./test",
+		"size": "bun run prepare && bun run gzip-size ./dist/morphlex.min.js --raw --include-original"
 	},
 	"devDependencies": {
 		"@open-wc/testing": "^3.0.0-next.5",
