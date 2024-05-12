@@ -49,20 +49,14 @@ interface Options {
 	afterPropertyUpdated?: (node: Node, propertyName: PropertyKey, previousValue: unknown) => void;
 }
 
-export function morph(node: ChildNode, reference: ChildNode, options: Options = {}): void {
+export function morph(node: ChildNode, reference: ChildNode | string, options: Options = {}): void {
+	if (typeof reference === "string") reference = parseChildNodeFromString(reference);
 	new Morph(options).morph([node, reference]);
 }
 
-export function morphInner(element: Element, reference: Element, options: Options = {}): void {
+export function morphInner(element: Element, reference: Element | string, options: Options = {}): void {
+	if (typeof reference === "string") reference = parseElementFromString(reference);
 	new Morph(options).morphInner([element, reference]);
-}
-
-export function morphFromString(node: ChildNode, reference: string, options: Options = {}): void {
-	morph(node, parseChildNodeFromString(reference), options);
-}
-
-export function morphInnerFromString(element: Element, reference: string, options: Options = {}): void {
-	morphInner(element, parseElementFromString(reference), options);
 }
 
 function parseElementFromString(string: string): Element {
@@ -75,9 +69,8 @@ function parseElementFromString(string: string): Element {
 function parseChildNodeFromString(string: string): ChildNode {
 	const parser = new DOMParser();
 	const doc = parser.parseFromString(string, "text/html");
-	const firstChild = doc.body.firstChild;
 
-	if (doc.childNodes.length === 1) return firstChild as ChildNode;
+	if (doc.childNodes.length === 1) return doc.body.firstChild as ChildNode;
 	else throw new Error("[Morphlex] The string was not a valid HTML node.");
 }
 

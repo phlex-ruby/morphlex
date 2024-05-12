@@ -1,14 +1,10 @@
 export function morph(node, reference, options = {}) {
+	if (typeof reference === "string") reference = parseChildNodeFromString(reference);
 	new Morph(options).morph([node, reference]);
 }
 export function morphInner(element, reference, options = {}) {
+	if (typeof reference === "string") reference = parseElementFromString(reference);
 	new Morph(options).morphInner([element, reference]);
-}
-export function morphFromString(node, reference, options = {}) {
-	morph(node, parseChildNodeFromString(reference), options);
-}
-export function morphInnerFromString(element, reference, options = {}) {
-	morphInner(element, parseElementFromString(reference), options);
 }
 function parseElementFromString(string) {
 	const node = parseChildNodeFromString(string);
@@ -18,8 +14,7 @@ function parseElementFromString(string) {
 function parseChildNodeFromString(string) {
 	const parser = new DOMParser();
 	const doc = parser.parseFromString(string, "text/html");
-	const firstChild = doc.body.firstChild;
-	if (doc.childNodes.length === 1) return firstChild;
+	if (doc.childNodes.length === 1) return doc.body.firstChild;
 	else throw new Error("[Morphlex] The string was not a valid HTML node.");
 }
 class Morph {

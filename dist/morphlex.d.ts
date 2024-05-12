@@ -12,8 +12,6 @@ interface Options {
 	beforePropertyUpdated?: (node: Node, propertyName: PropertyKey, newValue: unknown) => boolean;
 	afterPropertyUpdated?: (node: Node, propertyName: PropertyKey, previousValue: unknown) => void;
 }
-export declare function morph(node: ChildNode, reference: ChildNode, options?: Options): void;
-export declare function morphInner(element: Element, reference: Element, options?: Options): void;
-export declare function morphFromString(node: ChildNode, reference: string, options?: Options): void;
-export declare function morphInnerFromString(element: Element, reference: string, options?: Options): void;
+export declare function morph(node: ChildNode, reference: ChildNode | string, options?: Options): void;
+export declare function morphInner(element: Element, reference: Element | string, options?: Options): void;
 export {};
