@@ -1,6 +1,6 @@
 {
 	"name": "morphlex",
-	"version": "0.0.15",
+	"version": "0.0.16",
 	"author": "Joel Drapper",
 	"license": "MIT",
 	"type": "module",
@@ -23,7 +23,7 @@
 		"lint": "bun run prettier --check ./src ./dist ./test",
 		"minify": "bun run terser dist/morphlex.js -o dist/morphlex.min.js --config-file terser-config.json",
 		"prepare": "bun run build && bun run minify",
-		"ship": "bun run prepare && bun run test && bun run lint && bun run publish",
+		"ship": "bun run prepare && bun run test && bun run lint && npm publish",
 		"format": "bun run prettier --write ./src ./dist ./test",
 		"size": "bun run prepare && bun run gzip-size ./dist/morphlex.min.js --raw --include-original"
 	},
